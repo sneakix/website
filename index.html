@@ -293,7 +293,7 @@
   /* ---------- Category strip ---------- */
   .cat-strip{
     display:flex; gap:8px; overflow-x:auto;
-    padding:0 16px 14px;
+    padding:14px 16px 14px;
     scrollbar-width:none;
     border-bottom:1px solid var(--line);
   }
@@ -1041,27 +1041,26 @@
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="policyHeading">
     <button class="close-x" onclick="closeSheet('policyOverlay')" aria-label="Close">✕</button>
     <div class="sheet-handle"></div>
-    <h2 id="policyHeading">Terms &amp; Conditions</h2>
+    <h2 id="policyHeading">Terms of Service &amp; Replacement Policy</h2>
     <p class="policy-sub">Please read carefully before ordering</p>
 
     <div class="policy-block">
       <div class="policy-num">1</div>
       <div>
-        <h3 class="policy-title">Delivery Time</h3>
-        <p>Estimated delivery time is 4–7 working days.</p>
+        <h3 class="policy-title">Shipping &amp; Delivery</h3>
+        <p>Our standard delivery window is 5–7 working days.</p>
+        <p>While we strive for speed, SNEAKIX is not responsible for delays caused by courier logistics, weather, or transit issues. We ask for your patience during such delays as they are outside our control.</p>
       </div>
     </div>
 
     <div class="policy-block">
       <div class="policy-num">2</div>
       <div>
-        <h3 class="policy-title">Return &amp; Replacement</h3>
+        <h3 class="policy-title">Strict No-Refund / No-Return Policy</h3>
+        <p>At SNEAKIX, we provide a premium curated collection. Due to the nature of our products:</p>
         <ul class="policy-list">
-          <li>A continuous 360° unboxing video (no cuts) is required for any issue.</li>
-          <li>Any issue must be reported within 24 hours of delivery.</li>
-          <li>Returns are not accepted for incorrect size selection or change of mind.</li>
-          <li>Size exchange is available only if the requested size is in stock. The customer is responsible for two-way shipping charges.</li>
-          <li>If we ship the wrong item or a product arrives damaged, we will bear all replacement and shipping costs.</li>
+          <li>We do not offer any returns or monetary refunds under any circumstances.</li>
+          <li>All sales are final once the order is placed.</li>
         </ul>
       </div>
     </div>
@@ -1069,21 +1068,45 @@
     <div class="policy-block">
       <div class="policy-num">3</div>
       <div>
-        <h3 class="policy-title">Important Notes</h3>
+        <h3 class="policy-title">Replacement Policy (The 360° Video Rule)</h3>
+        <p>We only offer a replacement if the product delivered is damaged, the wrong color, or the wrong item due to an error on our part.</p>
+        <p>To be eligible for a replacement, you must provide a 360° unboxing video.</p>
+        <p style="margin-top:10px; font-weight:700;">Video Requirements:</p>
         <ul class="policy-list">
-          <li>Please double check your size before placing your order.</li>
-          <li>Please order using the size system shown on the product (UK or EU).</li>
-          <li>We are not responsible for incorrect addresses provided by the customer.</li>
-          <li>Orders once placed cannot be cancelled.</li>
+          <li>The video must start before the parcel is opened.</li>
+          <li>It must show all sides of the package to prove it was sealed.</li>
+          <li>The video must be a single, continuous shot from opening the parcel to showing every angle of the product.</li>
         </ul>
+        <p style="margin-top:10px;"><strong>Important:</strong> Any video that is cut, edited, or paused will be automatically rejected.</p>
       </div>
     </div>
 
     <div class="policy-block">
       <div class="policy-num">4</div>
       <div>
-        <h3 class="policy-title">Thank You</h3>
-        <p>We appreciate your trust and support! For any assistance, feel free to contact us.</p>
+        <h3 class="policy-title">Reporting Window</h3>
+        <p>Any complaint regarding damage or incorrect items must be reported within 24 hours of the delivery time recorded by the courier. Complaints made after 24 hours will not be entertained.</p>
+      </div>
+    </div>
+
+    <div class="policy-block">
+      <div class="policy-num">5</div>
+      <div>
+        <h3 class="policy-title">Sizing Issues</h3>
+        <ul class="policy-list">
+          <li><strong>Customer Error:</strong> We do not offer replacements or returns for size changes if the customer ordered the wrong size. Please refer to our size charts carefully before purchasing.</li>
+          <li><strong>Size Exchange:</strong> Size exchange is available only if the requested size is in stock. The customer is responsible for two-way shipping charges.</li>
+          <li><strong>Our Error:</strong> If we send a size different from the one you ordered, we will replace it free of cost (subject to the 360° video requirement).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="policy-block">
+      <div class="policy-num">6</div>
+      <div>
+        <h3 class="policy-title">Contact Us</h3>
+        <p>If you have any questions regarding your order or these policies, please contact us through our official WhatsApp or Instagram account.</p>
+        <p style="margin-top:10px;">Thank you for choosing SNEAKIX.</p>
       </div>
     </div>
   </div>
@@ -1195,7 +1218,7 @@
       <div class="field"><label for="f_pin">PIN Code</label><input required id="f_pin" name="pin" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="postal-code" placeholder="6-digit PIN"></div>
       <div class="field"><label for="f_phone1">Contact No. 1</label><input required id="f_phone1" name="phone1" type="tel" inputmode="tel" autocomplete="tel" placeholder="10-digit mobile number"></div>
       <div class="field"><label for="f_phone2">Contact No. 2 <span class="optional">(optional)</span></label><input id="f_phone2" name="phone2" type="tel" inputmode="tel" placeholder="Backup number"></div>
-      <div class="field"><label for="f_remarks">Remarks / Additional Notes <span class="optional">(optional)</span></label><textarea id="f_remarks" name="remarks" rows="2" placeholder="Special requests, color preferences, gift wrapping, delivery instructions, etc."></textarea></div>
+      <div class="field"><label for="f_remarks">Remarks / Additional Notes <span class="optional">(optional)</span></label><textarea id="f_remarks" name="remarks" rows="2" placeholder="Additional Information or Queries"></textarea></div>
       <button type="submit" class="wa-submit">Send Order on WhatsApp</button>
       <div class="form-note">Tapping this opens WhatsApp with your full order pre-filled. Nothing is charged here — payment is arranged directly in chat.</div>
     </form>
@@ -1220,7 +1243,7 @@
    description    -> free text: extras like box, dust bag, laces, etc.
    ========================================================= */
 const WHATSAPP_NUMBER = "919778781170"; // <-- your real WhatsApp number, country code + number, no + or spaces
-const SITE_URL = "https://sreejith555.github.io/sneakix/"; // <-- update once hosted
+const SITE_URL = "https://sneakix.github.io/website/"; // <-- must exactly match wherever this site is actually live (update if you move to Cloudflare Pages, a custom domain, etc.)
 const FACEBOOK_URL = "https://facebook.com/sneakix0"; // <-- verify this matches your actual Page URL
 const INSTAGRAM_URL = "https://instagram.com/sneakix__"; // <-- verify this matches your actual handle
 
@@ -1374,7 +1397,7 @@ function loadShoesFromSheet(){
 }
 
 const SHIPPING_TIERS = {
-  free: { label:"Free Shipping", desc:"Delivered in 5-8 days", cost:0 },
+  free: { label:"Free Shipping", desc:"Delivered in 5-7 days", cost:0 },
   fast: { label:"Fast Shipping (+₹300)", desc:"Delivered in 3-4 days", cost:300 },
   cod:  { label:"Cash on Delivery", desc:"Shipping charge varies by weight — confirmed on WhatsApp", cost:null }
 };
@@ -2367,15 +2390,14 @@ function addToCart(shoeId){
   }
 
   const price = (shoe.discount !== null && shoe.discount !== undefined) ? shoe.discount : shoe.price;
-  // Send the product's own photo link from the Google Sheet as the
-  // "Link" in the WhatsApp order — it opens directly as an image for the
-  // seller with no dependency on the storefront being deployed/reachable
-  // at SITE_URL, unlike a site deep-link.
-  const link = shoe.images[0];
+  // Send a direct link to the product's own page on the live site — the
+  // same #shoe-<id> deep link openItemDetail() writes to the URL bar when
+  // the page is open, so tapping it in WhatsApp opens the exact product
+  // (all photos, price, sizes) rather than just one flat image. Requires
+  // SITE_URL above to be set to wherever the site is actually hosted.
+  const link = `${SITE_URL}#shoe-${shoe.id}`;
 
-  const extraImageCount = Math.max(0, (shoe.images || []).length - 1);
-
-  cart.push({ shoeId, name:shoe.name, brand:shoe.brand, price, size, sizeSystem:shoe.sizeSystem, image:shoe.images[0], link, extraImageCount, codAvailable:shoe.codAvailable, qty });
+  cart.push({ shoeId, name:shoe.name, brand:shoe.brand, price, size, sizeSystem:shoe.sizeSystem, image:shoe.images[0], link, codAvailable:shoe.codAvailable, qty });
   updateCartCount();
 
   // Reset the quantity selector back to 1 for next time, so a leftover
@@ -2504,16 +2526,12 @@ function submitOrder(e){
 
   const base = cart.reduce((sum,i)=>sum+i.price*i.qty, 0);
   const tier = SHIPPING_TIERS[selectedShipping];
-  const shipLabel = tier.cost === null ? "Cash on Delivery (amount to be confirmed based on weight)" : (tier.cost === 0 ? "Free (5-8 days)" : `Fast Shipping ₹300 (3-4 days)`);
+  const shipLabel = tier.cost === null ? "Cash on Delivery (amount to be confirmed based on weight)" : (tier.cost === 0 ? "Free (5-7 days)" : `Fast Shipping ₹300 (3-4 days)`);
   const grandTotal = tier.cost === null ? `₹${base} + COD charge` : `₹${base + tier.cost}`;
 
   let msg = `*${cart.length} PAIR${cart.length>1?'S':''} SHOES ORDER*\n\n`;
   cart.forEach((item, i) => {
-    msg += `*PAIR ${i+1}*\nProduct: ${item.name}\nSize: ${item.size} (${item.sizeSystem})\nQuantity: ${item.qty}\nPrice: ₹${item.price} each${item.qty>1 ? ` (₹${item.price*item.qty} subtotal)` : ''}\nLink: ${item.link}\n`;
-    if(item.extraImageCount > 0){
-      msg += `(${item.extraImageCount} more image${item.extraImageCount > 1 ? "s" : ""})\n`;
-    }
-    msg += `\n`;
+    msg += `*PAIR ${i+1}*\nProduct: ${item.name}\nSize: ${item.size} (${item.sizeSystem})\nQuantity: ${item.qty}\nPrice: ₹${item.price} each${item.qty>1 ? ` (₹${item.price*item.qty} subtotal)` : ''}\nLink: ${item.link}\n\n`;
   });
 
   msg += `*CUSTOMER DETAILS*\nName: ${name}\n`;
