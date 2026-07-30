@@ -202,6 +202,12 @@
     transition:transform var(--dur-fast) var(--ease);
   }
   .cart-btn .count.bump{ transform:scale(1.35); }
+  @keyframes cartIconBump{
+    0%{ transform:scale(1); }
+    40%{ transform:scale(1.2); }
+    100%{ transform:scale(1); }
+  }
+  .cart-btn .cart-icon.bump{ animation:cartIconBump 0.35s var(--ease); }
 
   /* ---------- Footer ---------- */
   .site-footer{
@@ -838,6 +844,24 @@
   .wa-submit:active{ transform:scale(0.98); }
   .form-note{font-size:11.5px; color:var(--muted); margin-top:12px; line-height:1.5;}
 
+  .order-confirmation{
+    text-align:center; padding:24px 8px 8px;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .order-confirmation-check{
+    width:56px; height:56px; border-radius:50%;
+    background:var(--success); color:var(--success-ink);
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px; font-weight:900; margin-bottom:6px;
+  }
+  .order-confirmation h3{ font-size:16px; margin:0; line-height:1.4; }
+  .order-confirmation p{ font-size:13px; color:var(--muted); margin:0; line-height:1.5; }
+  .order-confirmation-retry{
+    font-size:12.5px; color:var(--ink); text-decoration:underline;
+    margin-top:10px;
+  }
+  .order-confirmation .wa-submit{ margin-top:18px; }
+
   /* Empty grid / no-results state */
   .grid-empty{
     grid-column:1/-1; text-align:center; color:var(--muted);
@@ -976,7 +1000,7 @@
   </div>
   <div class="header-side header-side-right">
     <button class="cart-btn" onclick="openCart()" aria-label="Open cart">
-      <span aria-hidden="true">🛒</span>
+      <span class="cart-icon" id="cartIcon" aria-hidden="true">🛒</span>
       <span class="count" id="cartCount" aria-live="polite">0</span>
     </button>
   </div>
@@ -1287,6 +1311,15 @@
       <button type="submit" class="wa-submit">Send Order on WhatsApp</button>
       <div class="form-note">Tapping this opens WhatsApp with your full order pre-filled. Nothing is charged here - payment is arranged directly in chat.</div>
     </form>
+
+    <div id="orderConfirmation" class="order-confirmation" style="display:none;">
+      <div class="order-confirmation-check">✓</div>
+      <h3>Your order has been sent on WhatsApp.</h3>
+      <p>We'll contact you as soon as possible to process your order.</p>
+      <p>Thank you for shopping with us!</p>
+      <a id="orderConfirmationRetryLink" href="#" target="_blank" rel="noopener" class="order-confirmation-retry">Didn't open? Tap here to open WhatsApp</a>
+      <button type="button" class="wa-submit" onclick="continueShopping()">Continue Shopping</button>
+    </div>
   </div>
 </div>
 
@@ -1296,7 +1329,16 @@
 
    name           -> free-form, override for limited editions
                       e.g. "Air Jordan 1 Coca-Cola Edition"
-   price/discount -> discount only if you're explicitly running one
+   price          -> the ACTUAL SELLING PRICE. Always shown prominently,
+                      never struck through.
+   marketPrice    -> optional, from the "Market Price" column. Only used as
+                      a higher reference price: shown struck through, and
+                      the discount % badge (e.g. "19% OFF") is calculated
+                      automatically as ((marketPrice-price)/marketPrice)*100,
+                      rounded. Leave blank for no discount. If it's left
+                      blank, or is not actually higher than price, no
+                      strikethrough/badge is shown — there is no manual
+                      discount % field anywhere.
    sizeSystem     -> "EU" or "UK"
    sizes          -> range string "40-45" OR explicit list [7,8,9,10]
    soldOutSizes   -> array of sizes to disable, e.g. [43]. Put "All" (or
@@ -1306,7 +1348,9 @@
    codAvailable   -> true/false
    returnAvailable-> true/false, shows "Return Available" on the item page
    isNew          -> true/false, shows "NEW" tag + New Arrivals filter
-   isSale         -> true/false, independent of discount, shows SALE tag
+   isSale         -> true/false, marketing-only SALE tag with no real price
+                      cut. Ignored if marketPrice already produces a real
+                      discount % (the % badge takes priority over this).
    images         -> array of image URLs, first is the main card image,
                       rest appear in the expanded gallery
    description    -> free text: extras like box, dust bag, laces, etc.
@@ -1408,7 +1452,15 @@ function rowsToShoes(rows){
       category,
       gender,
       price,
-      discount: r["Discount Price"] && r["Discount Price"].trim() ? parseInt(r["Discount Price"],10) : null,
+      // "Market Price" is an optional, higher reference price used only to
+      // show a strikethrough + compute a discount %. "Price" is ALWAYS the
+      // actual selling price shown prominently — it is never struck through.
+      marketPrice: (() => {
+        const raw = r["Market Price"];
+        if(!raw || !raw.trim()) return null;
+        const n = parseInt(raw, 10);
+        return isNaN(n) ? null : n;
+      })(),
       sizeSystem: (r["Size System"] || "EU").trim(),
       sizes: (r["Sizes"] || "").trim(),
       soldOutSizes: toIntList(r["Sold Out Sizes"]),
@@ -1794,6 +1846,16 @@ const KNOWN_MODELS = [
   { match:["palermo"], label:"Palermo" }
 ].sort((a, b) => Math.max(...b.match.map(m=>m.length)) - Math.max(...a.match.map(m=>m.length)));
 
+// Single source of truth for the Price / Market Price discount logic.
+// Returns the rounded discount % if marketPrice is a valid number strictly
+// greater than the actual selling price, otherwise null (no discount shown).
+// There is no manual discount % field anywhere — it's always derived here.
+function shoeDiscountPercent(shoe){
+  if(shoe.marketPrice === null || shoe.marketPrice === undefined) return null;
+  if(shoe.marketPrice <= shoe.price) return null;
+  return Math.round(((shoe.marketPrice - shoe.price) / shoe.marketPrice) * 100);
+}
+
 function detectModel(shoeName){
   const name = (shoeName || "").toLowerCase();
   for(const entry of KNOWN_MODELS){
@@ -1895,7 +1957,7 @@ function selectPriceTierHero(key){
 // however many of these four end up showing.
 function updateHamburgerQuickFilterVisibility(){
   const hasNewArrivals = SHOES.some(s => s.isNew);
-  const hasSale = SHOES.some(s => s.isSale || (s.discount !== null && s.discount !== undefined));
+  const hasSale = SHOES.some(s => s.isSale || shoeDiscountPercent(s) !== null);
   const premiumBtn = document.getElementById("hamburgerPremiumBtn");
   const newBtn = document.getElementById("hamburgerNewArrivalsBtn");
   const saleBtn = document.getElementById("hamburgerSaleBtn");
@@ -2263,8 +2325,7 @@ function getFilteredShoes(){
     if(activeFilter === "under2000" && shoe.price >= 2000) return false;
     if(activeFilter === "premium3000" && shoe.price < 2750) return false;
     if(priceMin > 0 || priceMax < 10000){
-      const price = (shoe.discount !== null && shoe.discount !== undefined) ? shoe.discount : shoe.price;
-      if(price < priceMin || price > priceMax) return false;
+      if(shoe.price < priceMin || shoe.price > priceMax) return false;
     }
     if(activeSizes.size > 0){
       // Multi-select: a shoe matches if it has ANY one of the selected sizes.
@@ -2275,9 +2336,8 @@ function getFilteredShoes(){
     if(activeAvailFilters.has("return") && !shoe.returnAvailable) return false;
     return true;
   }).sort((a, b) => {
-    const priceOf = shoe => (shoe.discount !== null && shoe.discount !== undefined) ? shoe.discount : shoe.price;
-    if(activeSort === "price_low") return priceOf(a) - priceOf(b);
-    if(activeSort === "price_high") return priceOf(b) - priceOf(a);
+    if(activeSort === "price_low") return a.price - b.price;
+    if(activeSort === "price_high") return b.price - a.price;
     return b.order - a.order; // latest-added first: later sheet rows = newer products
   });
 }
@@ -2311,11 +2371,13 @@ function renderGrid(){
   const list = fullList.slice(0, visibleCount);
 
   grid.innerHTML = list.map(shoe=>{
-    const hasDiscount = shoe.discount !== null && shoe.discount !== undefined;
+    const discountPct = shoeDiscountPercent(shoe);
+    const hasDiscount = discountPct !== null;
 
     const tags = [];
     if(shoe.soldOutAll) tags.push('<span class="tag sold">SOLD OUT</span>');
-    if(hasDiscount || shoe.isSale) tags.push('<span class="tag sale">SALE</span>');
+    if(hasDiscount) tags.push(`<span class="tag sale">${discountPct}% OFF</span>`);
+    else if(shoe.isSale) tags.push('<span class="tag sale">SALE</span>');
     if(shoe.isNew) tags.push('<span class="tag new">NEW</span>');
 
     return `
@@ -2331,8 +2393,8 @@ function renderGrid(){
           <div class="brand">${shoe.brand}</div>
           <div class="name">${shoe.name}</div>
           <div class="price-row">
-            <span class="price-now">₹${hasDiscount ? shoe.discount : shoe.price}</span>
-            ${hasDiscount ? `<span class="price-was">₹${shoe.price}</span>` : ''}
+            <span class="price-now">₹${shoe.price}</span>
+            ${hasDiscount ? `<span class="price-was">₹${shoe.marketPrice}</span>` : ''}
           </div>
         </div>
       </div>
@@ -2430,14 +2492,16 @@ function renderItemDetail(){
   const soldOut = shoe.soldOutSizes || [];
   const selected = selections[shoe.id];
   const quantity = quantities[shoe.id] || 1;
-  const hasDiscount = shoe.discount !== null && shoe.discount !== undefined;
+  const discountPct = shoeDiscountPercent(shoe);
+  const hasDiscount = discountPct !== null;
   const allSoldOut = shoe.soldOutAll || (sizeOptions.length > 0 && sizeOptions.every(sz => soldOut.includes(sz)));
   const photoCount = shoe.images.length;
   const hasMultiplePhotos = photoCount > 1;
 
   const tags = [];
   if(shoe.soldOutAll) tags.push('<span class="tag sold">SOLD OUT</span>');
-  if(hasDiscount || shoe.isSale) tags.push('<span class="tag sale">SALE</span>');
+  if(hasDiscount) tags.push(`<span class="tag sale">${discountPct}% OFF</span>`);
+  else if(shoe.isSale) tags.push('<span class="tag sale">SALE</span>');
   if(shoe.isNew) tags.push('<span class="tag new">NEW</span>');
 
   const sizeButtons = sizeOptions.map(sz => {
@@ -2469,8 +2533,8 @@ function renderItemDetail(){
       </div>
       <div class="item-detail-name">${shoe.name}</div>
       <div class="price-row">
-        <span class="price-now">₹${hasDiscount ? shoe.discount : shoe.price}</span>
-        ${hasDiscount ? `<span class="price-was">₹${shoe.price}</span>` : ''}
+        <span class="price-now">₹${shoe.price}</span>
+        ${hasDiscount ? `<span class="price-was">₹${shoe.marketPrice}</span>` : ''}
       </div>
 
       <div class="size-label" id="sizelabel-${shoe.id}">Select size (${shoe.sizeSystem})</div>
@@ -2542,7 +2606,8 @@ function addToCart(shoeId){
     return;
   }
 
-  const price = (shoe.discount !== null && shoe.discount !== undefined) ? shoe.discount : shoe.price;
+  const price = shoe.price;
+  const marketPrice = shoeDiscountPercent(shoe) !== null ? shoe.marketPrice : null;
   // Send a direct link to the product's own page on the live site — the
   // same #shoe-<id> deep link openItemDetail() writes to the URL bar when
   // the page is open, so tapping it in WhatsApp opens the exact product
@@ -2550,7 +2615,7 @@ function addToCart(shoeId){
   // SITE_URL above to be set to wherever the site is actually hosted.
   const link = `${SITE_URL}#shoe-${shoe.id}`;
 
-  cart.push({ shoeId, name:shoe.name, brand:shoe.brand, price, size, sizeSystem:shoe.sizeSystem, image:shoe.images[0], link, codAvailable:shoe.codAvailable, qty });
+  cart.push({ shoeId, name:shoe.name, brand:shoe.brand, price, marketPrice, size, sizeSystem:shoe.sizeSystem, image:shoe.images[0], link, codAvailable:shoe.codAvailable, qty });
   updateCartCount();
 
   // Reset the quantity selector back to 1 for next time, so a leftover
@@ -2570,6 +2635,7 @@ function addToCart(shoeId){
 
 function updateCartCount(){
   const el = document.getElementById("cartCount");
+  const icon = document.getElementById("cartIcon");
   // Reflects total pairs ordered (summing quantity per line), not just the
   // number of distinct product lines — so adding one shoe with Qty 3
   // correctly shows "3" on the cart icon, not "1".
@@ -2578,6 +2644,13 @@ function updateCartCount(){
   void el.offsetWidth; // restart animation
   el.classList.add("bump");
   setTimeout(()=> el.classList.remove("bump"), 220);
+
+  if(icon){
+    icon.classList.remove("bump");
+    void icon.offsetWidth; // restart animation
+    icon.classList.add("bump");
+    setTimeout(()=> icon.classList.remove("bump"), 350);
+  }
 }
 
 function openCart(){ renderCartLines(); document.getElementById("cartOverlay").classList.add("open"); }
@@ -2622,17 +2695,21 @@ function renderCartLines(){
     return;
   }
 
-  wrap.innerHTML = cart.map((item, idx) => `
+  wrap.innerHTML = cart.map((item, idx) => {
+    const cartDiscountPct = item.marketPrice ? Math.round(((item.marketPrice - item.price) / item.marketPrice) * 100) : null;
+    return `
     <div class="cart-line" onclick="openCartItemDetail(${item.shoeId})" role="button" tabindex="0"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openCartItemDetail(${item.shoeId});}">
       <img src="${item.image}" alt="${item.name}">
       <div class="info">
         <div class="n">${item.name}</div>
-        <div class="m">${item.brand} · Size ${item.size} (${item.sizeSystem}) · Qty ${item.qty} · ₹${item.price} each${item.qty>1 ? ` · ₹${item.price*item.qty} total` : ''}</div>
+        <div class="m">${item.brand} · Size ${item.size} (${item.sizeSystem}) · Qty ${item.qty}</div>
+        <div class="m">₹${item.price} each${cartDiscountPct !== null ? ` <span class="price-was">₹${item.marketPrice}</span> <span class="tag sale" style="vertical-align:1px;">${cartDiscountPct}% OFF</span>` : ''}${item.qty>1 ? ` · ₹${item.price*item.qty} total` : ''}</div>
       </div>
       <button class="remove" onclick="event.stopPropagation(); removeFromCart(${idx})">Remove</button>
     </div>
-  `).join("");
+  `;
+  }).join("");
 
   renderShippingOptions();
   renderTotals();
@@ -2657,6 +2734,11 @@ function closeSheet(id){ document.getElementById(id).classList.remove("open"); }
 function openCheckout(){
   document.getElementById("cartOverlay").classList.remove("open");
   document.getElementById("checkoutOverlay").classList.add("open");
+  // Always show the fresh form here, in case the customer previously closed
+  // this sheet (via the ✕ or tapping outside) while the success screen was
+  // showing, rather than tapping "Continue Shopping".
+  document.getElementById("checkoutForm").style.display = "";
+  document.getElementById("orderConfirmation").style.display = "none";
 }
 
 function backToCart(){
@@ -2685,7 +2767,11 @@ function submitOrder(e){
 
   let msg = `*${cart.length} PAIR${cart.length>1?'S':''} SHOES ORDER*\n\n`;
   cart.forEach((item, i) => {
-    msg += `*PAIR ${i+1}*\nProduct: ${item.name}\nSize: ${item.size} (${item.sizeSystem})\nQuantity: ${item.qty}\nPrice: ₹${item.price} each${item.qty>1 ? ` (₹${item.price*item.qty} subtotal)` : ''}\nLink: ${item.link}\n\n`;
+    const cartDiscountPct = item.marketPrice ? Math.round(((item.marketPrice - item.price) / item.marketPrice) * 100) : null;
+    const priceLine = cartDiscountPct !== null
+      ? `Price: ₹${item.price} each (Market Price: ₹${item.marketPrice}, ${cartDiscountPct}% OFF)${item.qty>1 ? ` (₹${item.price*item.qty} subtotal)` : ''}`
+      : `Price: ₹${item.price} each${item.qty>1 ? ` (₹${item.price*item.qty} subtotal)` : ''}`;
+    msg += `*PAIR ${i+1}*\nProduct: ${item.name}\nSize: ${item.size} (${item.sizeSystem})\nQuantity: ${item.qty}\n${priceLine}\nLink: ${item.link}\n\n`;
   });
 
   msg += `*CUSTOMER DETAILS*\nName: ${name}\n`;
@@ -2699,6 +2785,23 @@ function submitOrder(e){
 
   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
   window.open(url, "_blank");
+
+  // Show a clear success state instead of leaving the customer looking at
+  // the same cart/checkout screen with no sign anything happened.
+  document.getElementById("checkoutForm").style.display = "none";
+  const retryLink = document.getElementById("orderConfirmationRetryLink");
+  if(retryLink) retryLink.href = url;
+  document.getElementById("orderConfirmation").style.display = "flex";
+
+  cart = [];
+  updateCartCount();
+}
+
+function continueShopping(){
+  document.getElementById("checkoutForm").reset();
+  document.getElementById("checkoutForm").style.display = "";
+  document.getElementById("orderConfirmation").style.display = "none";
+  closeSheet("checkoutOverlay");
 }
 
 loadShoesFromSheet();
