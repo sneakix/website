@@ -70,6 +70,14 @@
     padding-bottom:110px;
     padding-top:var(--header-h); /* header is fixed now, so the page needs this space reserved */
     line-height:1.4;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    /* Lets .show-more-wrap (flex:1 below) absorb any leftover vertical
+       space, so the footer sits flush at the bottom of the viewport on
+       short pages (e.g. while the catalog is still loading) instead of
+       leaving a gap of plain background below it. On normal, taller pages
+       this has no visible effect — everything scrolls exactly as before. */
   }
   img{max-width:100%; display:block;}
 
@@ -92,7 +100,7 @@
     flex-direction:column; align-items:center; justify-content:center;
     gap:14px; padding:80px 20px; text-align:center; color:var(--muted);
   }
-  .deep-link-pending .deep-link-loader{ display:flex; }
+  .deep-link-pending .deep-link-loader{ display:flex; flex:1 0 auto; }
   .deep-link-loader .spin{
     width:26px; height:26px; border-radius:50%;
     border:3px solid var(--line); border-top-color:var(--ink);
@@ -417,10 +425,18 @@
   .card:hover .imgwrap img{ transform:scale(1.06); }
   @media (prefers-reduced-motion: reduce){ .card:hover .imgwrap img{ transform:none; } }
 
-  /* Skeleton loading state for cards while the catalog fetches */
-  .card.skeleton .imgwrap{ background:linear-gradient(100deg,#eeece7 30%,#f7f6f2 50%,#eeece7 70%); background-size:400% 100%; animation:shimmer 1.5s ease-in-out infinite; cursor:default; }
-  .card.skeleton .sk-line{ height:10px; border-radius:4px; background:linear-gradient(100deg,#eeece7 30%,#f7f6f2 50%,#eeece7 70%); background-size:400% 100%; animation:shimmer 1.5s ease-in-out infinite; }
-  @keyframes shimmer{ 0%{background-position:100% 0;} 100%{background-position:-100% 0;} }
+  /* Loading state while the catalog fetches from Google Sheets — a single
+     centered spinner spanning the grid, same style as the deep-link loader. */
+  .grid-loader{
+    grid-column:1/-1;
+    display:flex; align-items:center; justify-content:center;
+    padding:70px 20px;
+  }
+  .grid-loader .spin{
+    width:26px; height:26px; border-radius:50%;
+    border:3px solid var(--line); border-top-color:var(--ink);
+    animation:deepLinkSpin 0.8s linear infinite;
+  }
 
   .tag-row{ position:absolute; top:9px; left:9px; display:flex; gap:5px; flex-wrap:wrap; }
   .tag{
@@ -612,11 +628,17 @@
     position:relative; width:100%; flex:1;
     display:flex; align-items:center; justify-content:center;
     min-height:0; padding:60px 8px 10px;
+    overflow:hidden; /* clips the image once it's zoomed/panned past the stage edges */
   }
   .lightbox-stage img{
     max-width:100%; max-height:100%; object-fit:contain;
     border-radius:6px; user-select:none; -webkit-user-drag:none;
+    touch-action:none; /* we handle pinch/pan ourselves instead of the browser's default page zoom/scroll */
+    cursor:zoom-in;
+    transform-origin:center center;
+    transition:transform 0.15s ease-out;
   }
+  .lightbox-stage img.zoom-dragging{ transition:none; } /* no lag while actively pinching/dragging */
   .lightbox-nav{
     position:absolute; top:50%; transform:translateY(-50%);
     width:44px; height:44px; border-radius:50%;
@@ -686,6 +708,16 @@
     margin-top:22px; padding-top:18px; border-top:1px solid var(--line);
     font-size:13.5px; color:var(--muted); line-height:1.65;
   }
+  .item-detail-desc div + div{ margin-top:4px; }
+  .item-detail-desc-links{
+    margin-top:14px; display:flex; align-items:center; gap:8px;
+    font-size:12.5px;
+  }
+  .item-detail-desc-links a{
+    color:var(--ink); text-decoration:none; font-weight:700;
+  }
+  .item-detail-desc-links a:hover{ color:var(--muted); }
+  .item-detail-desc-links-sep{ color:var(--line); }
   /* Extra breathing room between size selection and Add to Cart so a
      mis-tap on mobile doesn't add the wrong size by accident. */
   .item-detail-info .sizes{ margin-bottom:6px; }
@@ -738,6 +770,79 @@
   }
   .overlay.open .sheet{ transform:translateY(0); }
   @media (prefers-reduced-motion: reduce){ .sheet{ transform:none; } }
+
+  /* Cart drawer only: the item list + shipping options scroll, but the
+     totals/checkout bar at the bottom stays fixed in place — it no longer
+     scrolls with the cart lines or jumps position when the cart is empty
+     vs full. */
+  .cart-sheet{
+    display:flex; flex-direction:column;
+    overflow:hidden; /* .cart-scroll-area below handles its own scrolling */
+  }
+  .cart-scroll-area{
+    overflow-y:auto; flex:1 1 auto; min-height:0;
+  }
+  .cart-bottom-bar{ flex:none; }
+
+  /* ---------- Filter panel: right-side slide-in drawer ---------- */
+  .filter-drawer-overlay{ align-items:stretch; justify-content:flex-end; }
+  .filter-panel{
+    background:var(--paper); width:min(340px, 88vw); height:100%;
+    display:flex; flex-direction:column;
+    box-shadow:-20px 0 50px rgba(0,0,0,0.3);
+    transform:translateX(100%);
+    transition:transform var(--dur-med) var(--ease);
+  }
+  .filter-drawer-overlay.open .filter-panel{ transform:translateX(0); }
+  @media (prefers-reduced-motion: reduce){ .filter-panel{ transform:none; } }
+
+  .filter-panel-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 18px 10px; flex:none;
+  }
+  .filter-panel-header h2{ margin:0; font-size:19px; letter-spacing:-0.01em; }
+  .filter-panel .close-x{
+    background:var(--panel); border:none; color:var(--ink); font-size:18px; cursor:pointer;
+    width:34px; height:34px; border-radius:50%; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    transition:background var(--dur-fast) var(--ease);
+  }
+  .filter-panel .close-x:hover{ background:var(--panel-hover); }
+
+  .filter-search-wrap{ padding:2px 18px 14px; flex:none; }
+  .filter-search-wrap input{
+    width:100%; padding:11px 13px; border-radius:var(--radius-sm);
+    border:1.5px solid var(--line); background:var(--panel);
+    font-family:inherit; font-size:13.5px; color:var(--ink);
+  }
+  .filter-search-wrap input:focus{ outline:none; border-color:var(--ink); }
+  .filter-search-wrap input::-webkit-search-cancel-button{ cursor:pointer; }
+
+  .filter-panel-scroll{ flex:1 1 auto; overflow-y:auto; padding:0 18px; min-height:0; }
+
+  .filter-accordion-item{ border-bottom:1px solid var(--line); }
+  .filter-accordion-item:last-child{ border-bottom:none; }
+  .filter-accordion-header{
+    width:100%; display:flex; align-items:center; justify-content:space-between;
+    background:none; border:none; padding:15px 0; cursor:pointer; font-family:inherit; text-align:left;
+  }
+  .filter-accordion-header h3{ margin:0; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink); font-weight:700; }
+  .filter-accordion-header .chevron{
+    color:var(--muted); font-size:16px; transition:transform var(--dur-med) var(--ease); flex:none; margin-left:10px;
+  }
+  .filter-accordion-item.open .filter-accordion-header .chevron{ transform:rotate(90deg); }
+  .filter-accordion-body{
+    display:grid; grid-template-rows:0fr;
+    transition:grid-template-rows var(--dur-med) var(--ease);
+  }
+  .filter-accordion-item.open .filter-accordion-body{ grid-template-rows:1fr; }
+  .filter-accordion-body-inner{ overflow:hidden; }
+  .filter-accordion-content{ padding:0 0 16px; }
+  .filter-accordion-content .price-filter{ margin-top:0; }
+  .filter-accordion-content .size-filter-block:first-of-type{ margin-top:12px; }
+
+  .filter-panel .filter-sheet-actions{ flex:none; padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px)); border-top:1px solid var(--line); margin-top:0; }
+
   .sheet-handle{ width:40px; height:4px; background:var(--line); border-radius:3px; margin:0 auto 14px; }
   .sheet h2{margin:0 0 14px; font-size:19px; letter-spacing:-0.01em;}
   .sheet h3{margin:18px 0 9px; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); font-weight:700;}
@@ -870,7 +975,7 @@
   .grid-empty .emoji{ font-size:28px; display:block; margin-bottom:10px; }
 
   /* ---------- Show more ---------- */
-  .show-more-wrap{ display:flex; justify-content:center; padding:6px 16px 28px; }
+  .show-more-wrap{ display:flex; justify-content:center; padding:6px 16px 28px; flex:1 0 auto; }
   .show-more-btn{
     padding:13px 30px; border-radius:var(--radius-pill);
     border:1.5px solid var(--ink); background:transparent; color:var(--ink);
@@ -1055,10 +1160,9 @@
 <div class="selected-filters-row" id="selectedFiltersRow" role="group" aria-label="Active filters"></div>
 
 <main id="grid" class="grid" aria-live="polite" aria-busy="true">
-  <div class="card skeleton" aria-hidden="true"><div class="imgwrap"></div><div class="body"><div class="sk-line" style="width:40%"></div><div class="sk-line" style="width:80%"></div><div class="sk-line" style="width:30%"></div></div></div>
-  <div class="card skeleton" aria-hidden="true"><div class="imgwrap"></div><div class="body"><div class="sk-line" style="width:40%"></div><div class="sk-line" style="width:80%"></div><div class="sk-line" style="width:30%"></div></div></div>
-  <div class="card skeleton" aria-hidden="true"><div class="imgwrap"></div><div class="body"><div class="sk-line" style="width:40%"></div><div class="sk-line" style="width:80%"></div><div class="sk-line" style="width:30%"></div></div></div>
-  <div class="card skeleton" aria-hidden="true"><div class="imgwrap"></div><div class="body"><div class="sk-line" style="width:40%"></div><div class="sk-line" style="width:80%"></div><div class="sk-line" style="width:30%"></div></div></div>
+  <div class="grid-loader" aria-hidden="true">
+    <div class="spin"></div>
+  </div>
 </main>
 <div class="show-more-wrap" id="showMoreWrap"></div>
 
@@ -1180,8 +1284,10 @@
     <div class="policy-block">
       <div class="policy-num">5</div>
       <div>
-        <h3 class="policy-title">No-Refund / No-Return Policy</h3>
-        <p>At SNEAKIX, we provide a premium curated collection. Due to the nature of our products, we do not offer any returns or monetary refunds. All sales are final once the order is placed.</p>
+        <h3 class="policy-title">Return and Refund Policy</h3>
+        <p>At SNEAKIX, most products are sold under a No Return &amp; No Refund policy. All sales are final once an order is placed.</p>
+        <p>However, selected products may be eligible for Returns or Cash on Delivery (COD). If applicable, this will be clearly stated on the product page.</p>
+        <p>If a product does not explicitly mention that Returns or COD are available, the standard No Return &amp; No Refund policy applies.</p>
       </div>
     </div>
 
@@ -1214,50 +1320,106 @@
 </div>
 
 <!-- Filters sheet -->
-<div class="overlay" id="filterOverlay" onclick="if(event.target===this) closeSheet('filterOverlay')">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="filterHeading">
-    <button class="close-x" onclick="closeSheet('filterOverlay')" aria-label="Close">✕</button>
-    <div class="sheet-handle"></div>
-    <h2 id="filterHeading">Filters</h2>
+<div class="overlay filter-drawer-overlay" id="filterOverlay" onclick="if(event.target===this) closeSheet('filterOverlay')">
+  <div class="filter-panel" role="dialog" aria-modal="true" aria-labelledby="filterHeading">
+    <div class="filter-panel-header">
+      <h2 id="filterHeading">Filters</h2>
+      <button class="close-x" onclick="closeSheet('filterOverlay')" aria-label="Close">✕</button>
+    </div>
 
-    <h3>Sort By</h3>
-    <div class="filter-chip-row" id="filterSortRow"></div>
+    <div class="filter-search-wrap">
+      <input type="search" id="filterOptionSearch" placeholder="Search brands, models..." oninput="filterOptionSearchInput()" aria-label="Search filter options">
+    </div>
 
-    <h3>Type</h3>
-    <div class="filter-chip-row" id="filterTypeRow"></div>
-
-    <h3>Brand <span class="filter-hint">(select multiple)</span></h3>
-    <div class="filter-chip-row" id="filterBrandRow"></div>
-
-    <h3>Model <span class="filter-hint">(select multiple)</span></h3>
-    <div class="filter-chip-row" id="filterModelRow"></div>
-
-    <h3>Price</h3>
-    <div class="price-filter">
-      <div class="price-filter-row">
-        <span class="price-filter-label">Min <b id="priceMinLabel">₹0</b></span>
-        <input type="range" id="priceMinSlider" min="0" max="10000" step="100" value="0" oninput="onPriceSliderChange()" aria-label="Minimum price">
+    <div class="filter-panel-scroll">
+      <div class="filter-accordion-item" id="filterAccordion-sort">
+        <button class="filter-accordion-header" onclick="toggleFilterSection('sort')" aria-expanded="false">
+          <h3>Sort By</h3><span class="chevron">›</span>
+        </button>
+        <div class="filter-accordion-body"><div class="filter-accordion-body-inner"><div class="filter-accordion-content">
+          <div class="filter-chip-row" id="filterSortRow"></div>
+        </div></div></div>
       </div>
-      <div class="price-filter-row">
-        <span class="price-filter-label">Max <b id="priceMaxLabel">₹10,000</b></span>
-        <input type="range" id="priceMaxSlider" min="0" max="10000" step="100" value="10000" oninput="onPriceSliderChange()" aria-label="Maximum price">
+
+      <div class="filter-accordion-item" id="filterAccordion-type">
+        <button class="filter-accordion-header" onclick="toggleFilterSection('type')" aria-expanded="false">
+          <h3>Type</h3><span class="chevron">›</span>
+        </button>
+        <div class="filter-accordion-body"><div class="filter-accordion-body-inner"><div class="filter-accordion-content">
+          <div class="filter-chip-row" id="filterTypeRow"></div>
+        </div></div></div>
       </div>
-    </div>
 
-    <h3>Size</h3>
-    <div class="filter-chip-row" id="filterSizeAnyRow"></div>
-    <div class="size-filter-block">
-      <span class="size-filter-label">EU</span>
-      <div class="filter-chip-row" id="filterSizeRowEU"></div>
-    </div>
-    <div class="size-filter-block">
-      <span class="size-filter-label" id="filterSizeLabelSecondary">UK</span>
-      <div class="filter-chip-row" id="filterSizeRowUK"></div>
-    </div>
+      <div class="filter-accordion-item" id="filterAccordion-brand">
+        <button class="filter-accordion-header" onclick="toggleFilterSection('brand')" aria-expanded="false">
+          <h3>Brand <span class="filter-hint">(select multiple)</span></h3><span class="chevron">›</span>
+        </button>
+        <div class="filter-accordion-body"><div class="filter-accordion-body-inner"><div class="filter-accordion-content">
+          <div class="filter-chip-row" id="filterBrandRow"></div>
+        </div></div></div>
+      </div>
 
-    <div id="filterAvailSection">
-      <h3>Availability</h3>
-      <div class="filter-chip-row" id="filterAvailRow"></div>
+      <div class="filter-accordion-item" id="filterAccordion-model">
+        <button class="filter-accordion-header" onclick="toggleFilterSection('model')" aria-expanded="false">
+          <h3>Model <span class="filter-hint">(select multiple)</span></h3><span class="chevron">›</span>
+        </button>
+        <div class="filter-accordion-body"><div class="filter-accordion-body-inner"><div class="filter-accordion-content">
+          <div class="filter-chip-row" id="filterModelRow"></div>
+        </div></div></div>
+      </div>
+
+      <div class="filter-accordion-item" id="filterAccordion-price">
+        <button class="filter-accordion-header" onclick="toggleFilterSection('price')" aria-expanded="false">
+          <h3>Price</h3><span class="chevron">›</span>
+        </button>
+        <div class="filter-accordion-body"><div class="filter-accordion-body-inner"><div class="filter-accordion-content">
+          <div class="price-filter">
+            <div class="price-filter-row">
+              <span class="price-filter-label">Min <b id="priceMinLabel">₹0</b></span>
+              <input type="range" id="priceMinSlider" min="0" max="10000" step="100" value="0" oninput="onPriceSliderChange()" aria-label="Minimum price">
+            </div>
+            <div class="price-filter-row">
+              <span class="price-filter-label">Max <b id="priceMaxLabel">₹10,000</b></span>
+              <input type="range" id="priceMaxSlider" min="0" max="10000" step="100" value="10000" oninput="onPriceSliderChange()" aria-label="Maximum price">
+            </div>
+          </div>
+        </div></div></div>
+      </div>
+
+      <div class="filter-accordion-item" id="filterAccordion-size">
+        <button class="filter-accordion-header" onclick="toggleFilterSection('size')" aria-expanded="false">
+          <h3>Size</h3><span class="chevron">›</span>
+        </button>
+        <div class="filter-accordion-body"><div class="filter-accordion-body-inner"><div class="filter-accordion-content">
+          <div class="filter-chip-row" id="filterSizeAnyRow"></div>
+          <div class="size-filter-block">
+            <span class="size-filter-label">EU</span>
+            <div class="filter-chip-row" id="filterSizeRowEU"></div>
+          </div>
+          <div class="size-filter-block">
+            <span class="size-filter-label" id="filterSizeLabelSecondary">UK</span>
+            <div class="filter-chip-row" id="filterSizeRowUK"></div>
+          </div>
+        </div></div></div>
+      </div>
+
+      <div class="filter-accordion-item" id="filterAccordion-quality" style="display:none;">
+        <button class="filter-accordion-header" onclick="toggleFilterSection('quality')" aria-expanded="false">
+          <h3>Quality</h3><span class="chevron">›</span>
+        </button>
+        <div class="filter-accordion-body"><div class="filter-accordion-body-inner"><div class="filter-accordion-content">
+          <div class="filter-chip-row" id="filterQualityRow"></div>
+        </div></div></div>
+      </div>
+
+      <div class="filter-accordion-item" id="filterAccordion-avail" style="display:none;">
+        <button class="filter-accordion-header" onclick="toggleFilterSection('avail')" aria-expanded="false">
+          <h3>Availability</h3><span class="chevron">›</span>
+        </button>
+        <div class="filter-accordion-body"><div class="filter-accordion-body-inner"><div class="filter-accordion-content">
+          <div class="filter-chip-row" id="filterAvailRow"></div>
+        </div></div></div>
+      </div>
     </div>
 
     <div class="filter-sheet-actions">
@@ -1269,23 +1431,27 @@
 
 <!-- Cart sheet -->
 <div class="overlay" id="cartOverlay" onclick="if(event.target===this) closeSheet('cartOverlay')">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cartHeading">
+  <div class="sheet cart-sheet" role="dialog" aria-modal="true" aria-labelledby="cartHeading">
     <button class="close-x" onclick="closeSheet('cartOverlay')" aria-label="Close">✕</button>
     <div class="sheet-handle"></div>
     <button class="sheet-back-link" onclick="closeSheet('cartOverlay')">← Back to shopping</button>
     <h2 id="cartHeading">Your Cart</h2>
-    <div id="cartLines"></div>
 
-    <h3 id="shipHeading" style="display:none;">Shipping Option</h3>
-    <div id="shipOptions"></div>
-
-    <div id="cartTotals" style="display:none;">
-      <div class="cart-subline"><span>Base Price</span><span id="sumBase"></span></div>
-      <div class="cart-subline"><span>Shipping</span><span id="sumShip"></span></div>
-      <div class="cart-total"><span>Grand Total</span><span id="sumTotal"></span></div>
+    <div class="cart-scroll-area">
+      <div id="cartLines"></div>
+      <h3 id="shipHeading" style="display:none;">Shipping Option</h3>
+      <div id="shipOptions"></div>
     </div>
 
-    <button class="checkout-btn" id="checkoutBtn" onclick="openCheckout()" disabled>Confirm Order</button>
+    <div class="cart-bottom-bar">
+      <div id="cartTotals" style="display:none;">
+        <div class="cart-subline"><span>Base Price</span><span id="sumBase"></span></div>
+        <div class="cart-subline"><span>Shipping</span><span id="sumShip"></span></div>
+        <div class="cart-total"><span>Grand Total</span><span id="sumTotal"></span></div>
+      </div>
+
+      <button class="checkout-btn" id="checkoutBtn" onclick="openCheckout()" disabled>Confirm Order</button>
+    </div>
   </div>
 </div>
 
@@ -1351,9 +1517,23 @@
    isSale         -> true/false, marketing-only SALE tag with no real price
                       cut. Ignored if marketPrice already produces a real
                       discount % (the % badge takes priority over this).
+   quality        -> ONLY recognized values (case-insensitive): 7A, 10A,
+                      UA, Semi UA. Anything else is ignored — no quality
+                      line shown. Displayed at the very start of the
+                      description block, e.g. "10A Quality." See
+                      qualityLabel() for the exact mapping.
    images         -> array of image URLs, first is the main card image,
                       rest appear in the expanded gallery
-   description    -> free text: extras like box, dust bag, laces, etc.
+   description    -> slash-separated tags, e.g. "Brand Box/Extra
+                      Laces/Kerala" — NOT a full sentence, and NOT where
+                      Quality goes anymore (see the quality column above).
+                      A "Kerala" tag (exact match, any case) shows "2-4
+                      Days Delivery in Kerala." on its own line — the word
+                      "Kerala" itself is never displayed, it's just a
+                      trigger. Every other tag becomes part of a "Comes
+                      with ..." line ("Brand Box" shows as "the brand
+                      box"). Blank cell -> "Standard packaging." See
+                      buildDescriptionLines() for the exact rules.
    ========================================================= */
 const WHATSAPP_NUMBER = "919778781170"; // <-- your real WhatsApp number, country code + number, no + or spaces
 const SITE_URL = "https://sneakix.pages.dev/"; // <-- must exactly match wherever this site is actually live (update again if you move to a custom domain)
@@ -1434,15 +1614,16 @@ function rowsToShoes(rows){
     // different images.
     const idBasis = explicitId || `${brand}|${name}|${category}|${images[0] || ""}`;
     const price = parseInt(r["Price"], 10) || 0;
+    // Quality is its own sheet column now — only 7A / 10A / UA / Semi UA
+    // are recognized (case-insensitive); anything else is ignored, see
+    // qualityLabel(). Stored raw here.
+    const quality = (r["Quality"] || "").trim();
 
-    // If the sheet's Description cell is blank and the product is priced
-    // at 2750+, show a default "Premium UA Quality" description instead
-    // of an empty one. Any description already present in the sheet is
-    // left exactly as-is, regardless of price.
-    let description = (r["Description"] || "").trim();
-    if(!description && price >= 2750){
-      description = "Premium UA Quality";
-    }
+    // Description is written as slash-separated tags (e.g.
+    // "Brand Box/Extra Laces/Kerala") and turned into sentences at render
+    // time by buildDescriptionLines() — see that function for the rules.
+    // Raw value is stored as-is here; no auto-fallback based on price.
+    const description = (r["Description"] || "").trim();
 
     return {
       id: hashId(idBasis),
@@ -1452,6 +1633,7 @@ function rowsToShoes(rows){
       category,
       gender,
       price,
+      quality,
       // "Market Price" is an optional, higher reference price used only to
       // show a strikethrough + compute a discount %. "Price" is ALWAYS the
       // actual selling price shown prominently — it is never struck through.
@@ -1555,6 +1737,7 @@ let activeGender = null;        // null | "M" | "W" — independent of category/
 let activeCategory = "All";     // shoe TYPE filter (Shoes/Boots/Ballet/Loafers/Formals/Sandals) — no longer encodes gender
 let activeType = "All";         // shoe type within a category, e.g. Sneakers | Sandals | Formal
 let activeAvailFilters = new Set(); // multi-select: 'cod' | 'return' — empty set = no availability filter applied
+let activeQualities = new Set(); // multi-select: normalized quality keys ('7a'|'10a'|'ua'|'semiua')
 let activeBrands = new Set();   // multi-select: empty set = "All"
 let activeModels = new Set();   // multi-select: empty set = "All"
 let priceMin = 0;
@@ -1660,9 +1843,119 @@ function renderLightbox(){
   document.getElementById("lightboxCounter").style.display = shoe.images.length > 1 ? "block" : "none";
   document.querySelectorAll("#lightbox .lightbox-nav").forEach(btn => btn.style.display = shoe.images.length > 1 ? "flex" : "none");
   document.getElementById("lightboxThumbs").innerHTML = shoe.images.length > 1
-    ? shoe.images.map((src,i)=>`<img src="${src}" class="${i===lightboxIndex?'active':''}" onclick="lightboxIndex=${i}; renderLightbox();" alt="View angle ${i+1}">`).join("")
+    ? shoe.images.map((src,i)=>`<img src="${escapeHtml(src)}" class="${i===lightboxIndex?'active':''}" onclick="lightboxIndex=${i}; renderLightbox();" alt="View angle ${i+1}">`).join("")
     : "";
+  resetLightboxZoom(); // every photo starts unzoomed
 }
+
+// ---------- Lightbox pinch/scroll/drag zoom ----------
+// Supports: two-finger pinch to zoom (mobile), double-tap/double-click to
+// toggle zoom, mouse wheel to zoom (desktop), and dragging to pan once
+// zoomed in. Bound once since #lightboxImg is a single persistent element
+// whose src just gets swapped between photos.
+let lbZoomScale = 1, lbZoomX = 0, lbZoomY = 0;
+let lbPinchStartDist = 0, lbPinchStartScale = 1;
+let lbLastTapTime = 0;
+let lbDragging = false, lbDragStartX = 0, lbDragStartY = 0, lbDragOrigX = 0, lbDragOrigY = 0;
+const LB_MAX_ZOOM = 3;
+const LB_DOUBLE_TAP_ZOOM = 2.5;
+
+function resetLightboxZoom(){
+  lbZoomScale = 1; lbZoomX = 0; lbZoomY = 0;
+  applyLightboxZoom();
+}
+function applyLightboxZoom(){
+  const img = document.getElementById("lightboxImg");
+  if(!img) return;
+  img.style.transform = `translate(${lbZoomX}px, ${lbZoomY}px) scale(${lbZoomScale})`;
+  img.style.cursor = lbZoomScale > 1 ? "grab" : "zoom-in";
+}
+function lbTouchDistance(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+function toggleLightboxZoom(){
+  if(lbZoomScale > 1){ resetLightboxZoom(); }
+  else { lbZoomScale = LB_DOUBLE_TAP_ZOOM; applyLightboxZoom(); }
+}
+
+function initLightboxZoomHandlers(){
+  const img = document.getElementById("lightboxImg");
+  if(!img) return;
+
+  img.addEventListener("touchstart", (e) => {
+    if(e.touches.length === 2){
+      lbPinchStartDist = lbTouchDistance(e.touches);
+      lbPinchStartScale = lbZoomScale;
+      img.classList.add("zoom-dragging");
+    } else if(e.touches.length === 1 && lbZoomScale > 1){
+      lbDragging = true;
+      lbDragStartX = e.touches[0].clientX;
+      lbDragStartY = e.touches[0].clientY;
+      lbDragOrigX = lbZoomX;
+      lbDragOrigY = lbZoomY;
+      img.classList.add("zoom-dragging");
+    }
+  }, { passive: true });
+
+  img.addEventListener("touchmove", (e) => {
+    if(e.touches.length === 2){
+      e.preventDefault();
+      const dist = lbTouchDistance(e.touches);
+      const scale = lbPinchStartScale * (dist / lbPinchStartDist);
+      lbZoomScale = Math.min(LB_MAX_ZOOM, Math.max(1, scale));
+      if(lbZoomScale === 1){ lbZoomX = 0; lbZoomY = 0; }
+      applyLightboxZoom();
+    } else if(e.touches.length === 1 && lbDragging){
+      e.preventDefault();
+      lbZoomX = lbDragOrigX + (e.touches[0].clientX - lbDragStartX);
+      lbZoomY = lbDragOrigY + (e.touches[0].clientY - lbDragStartY);
+      applyLightboxZoom();
+    }
+  }, { passive: false });
+
+  img.addEventListener("touchend", (e) => {
+    lbDragging = false;
+    img.classList.remove("zoom-dragging");
+    if(e.touches.length === 0 && e.changedTouches.length === 1){
+      const now = Date.now();
+      if(now - lbLastTapTime < 300) toggleLightboxZoom(); // double-tap
+      lbLastTapTime = now;
+    }
+  });
+
+  // Desktop: double-click toggles zoom, wheel zooms in/out, drag pans when zoomed
+  img.addEventListener("dblclick", (e) => { e.preventDefault(); toggleLightboxZoom(); });
+
+  img.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.25 : -0.25;
+    lbZoomScale = Math.min(LB_MAX_ZOOM, Math.max(1, lbZoomScale + delta));
+    if(lbZoomScale === 1){ lbZoomX = 0; lbZoomY = 0; }
+    applyLightboxZoom();
+  }, { passive: false });
+
+  img.addEventListener("mousedown", (e) => {
+    if(lbZoomScale <= 1) return;
+    e.preventDefault();
+    lbDragging = true;
+    lbDragStartX = e.clientX; lbDragStartY = e.clientY;
+    lbDragOrigX = lbZoomX; lbDragOrigY = lbZoomY;
+    img.classList.add("zoom-dragging");
+  });
+  window.addEventListener("mousemove", (e) => {
+    if(!lbDragging) return;
+    lbZoomX = lbDragOrigX + (e.clientX - lbDragStartX);
+    lbZoomY = lbDragOrigY + (e.clientY - lbDragStartY);
+    applyLightboxZoom();
+  });
+  window.addEventListener("mouseup", () => {
+    lbDragging = false;
+    img.classList.remove("zoom-dragging");
+  });
+}
+initLightboxZoomHandlers();
 
 // Escape closes whichever sheet is open — standard, expected modal behavior
 window.addEventListener("keydown", (e) => {
@@ -1847,13 +2140,96 @@ const KNOWN_MODELS = [
 ].sort((a, b) => Math.max(...b.match.map(m=>m.length)) - Math.max(...a.match.map(m=>m.length)));
 
 // Single source of truth for the Price / Market Price discount logic.
-// Returns the rounded discount % if marketPrice is a valid number strictly
-// greater than the actual selling price, otherwise null (no discount shown).
-// There is no manual discount % field anywhere — it's always derived here.
+// Returns the rounded discount % ONLY when the sheet's "Sale" column is
+// TRUE for this product AND marketPrice is a valid number strictly
+// greater than the actual selling price. A Market Price on its own does
+// NOT trigger a discount — Sale must be explicitly checked. Otherwise
+// returns null (no strikethrough, no badge). There is no manual discount
+// % field anywhere — it's always derived here from this single function,
+// so every place that shows a price stays in sync automatically.
 function shoeDiscountPercent(shoe){
+  if(!shoe.isSale) return null;
   if(shoe.marketPrice === null || shoe.marketPrice === undefined) return null;
   if(shoe.marketPrice <= shoe.price) return null;
   return Math.round(((shoe.marketPrice - shoe.price) / shoe.marketPrice) * 100);
+}
+
+// Quality now comes from its own sheet column (not from Description tags
+// anymore). Only these four values are recognized, matched loosely
+// (case-insensitive, ignoring spaces/hyphens so "Semi UA", "Semi-UA" and
+// "SemiUA" all count as the same thing) — anything else in the column is
+// ignored, no quality line/filter match at all.
+const QUALITY_OPTIONS = [
+  { key: "7a", filterLabel: "7A", descLine: "7A Quality." },
+  { key: "10a", filterLabel: "10A", descLine: "10A Quality." },
+  { key: "semiua", filterLabel: "Semi-UA", descLine: "Semi UA Quality." },
+  { key: "ua", filterLabel: "UA", descLine: "UA Quality." }
+];
+function normalizeQuality(rawQuality){
+  const q = (rawQuality || "").trim().toLowerCase().replace(/[\s-]+/g, "");
+  const match = QUALITY_OPTIONS.find(o => o.key === q);
+  return match ? match.key : null;
+}
+function qualityLabel(rawQuality){
+  const key = normalizeQuality(rawQuality);
+  if(!key) return null;
+  return QUALITY_OPTIONS.find(o => o.key === key).descLine;
+}
+
+// Description cells are written as slash-separated tags, e.g.
+// "Brand Box/Extra Laces/Kerala" rather than a full sentence.
+// This turns those tags into short display sentences:
+//   - a "Kerala" tag (exact match, case-insensitive) becomes its own line:
+//     "2-4 Days Delivery in Kerala." — the word "Kerala" itself is never
+//     shown, it's purely a trigger.
+//   - every other tag becomes part of a single "Comes with ..." line,
+//     with "Brand Box" specifically worded as "the brand box" and every
+//     other tag used as typed (lowercased) — joined with commas and "and".
+//   - a blank cell falls back to "Standard packaging."
+// Returns an array of plain-text lines (already trimmed, not yet escaped —
+// callers must still run each line through escapeHtml before inserting).
+function buildDescriptionLines(rawDescription){
+  const raw = (rawDescription || "").trim();
+  if(!raw) return ["Standard packaging."];
+
+  const tags = raw.split("/").map(t => t.trim()).filter(Boolean);
+  const lines = [];
+
+  const hasKerala = tags.some(t => t.toLowerCase() === "kerala");
+  if(hasKerala) lines.push("2-4 Days Delivery in Kerala.");
+
+  // Title Case each extra as typed (e.g. "brand box" -> "Brand Box") rather
+  // than lowercasing it, so tags read as clean labels in the sentence.
+  const titleCase = str => str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const extras = tags
+    .filter(t => t.toLowerCase() !== "kerala")
+    .map(titleCase);
+
+  if(extras.length === 1){
+    lines.push(`Comes with ${extras[0]}.`);
+  } else if(extras.length > 1){
+    const last = extras[extras.length - 1];
+    const rest = extras.slice(0, -1).join(", ");
+    lines.push(`Comes with ${rest} and ${last}.`);
+  }
+
+  // If neither a Kerala tag nor any extras were found (e.g. the cell had
+  // junk like just slashes), fall back rather than showing a blank block.
+  if(lines.length === 0) lines.push("Standard packaging.");
+
+  return lines;
+}
+
+// Any text that ultimately comes from the Google Sheet (name, brand,
+// description, category, etc.) must be run through this before it's
+// inserted via innerHTML. Otherwise a sheet cell containing something like
+// <img src=x onerror=...> would be parsed as real HTML/JS by the browser
+// instead of displayed as plain text. This does NOT affect how normal
+// product text looks — it only neutralizes '<', '>', '&', quotes.
+function escapeHtml(str){
+  return String(str ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
 }
 
 function detectModel(shoeName){
@@ -1942,7 +2318,7 @@ function setFilter(key){
 function selectPriceTierHero(key){
   activeFilter = key;
   activeGender = null; activeCategory = "All"; activeType = "All";
-  activeBrands.clear(); activeModels.clear(); activeSizes.clear(); activeAvailFilters.clear();
+  activeBrands.clear(); activeModels.clear(); activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear();
   visibleCount = PAGE_SIZE;
   renderFilterStrip(); renderCategories(); renderFilterSheet(); renderSelectedFilters(); renderGrid();
   updateGenderHeroVisibility();
@@ -2053,7 +2429,7 @@ function setCategory(c){
 function setGender(g){
   activeGender = g; // "M" or "W"
   activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
-  activeSizes.clear(); activeAvailFilters.clear(); activeFilter = "all";
+  activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all";
   visibleCount = PAGE_SIZE;
   renderFilterStrip(); renderCategories(); renderFilterSheet(); renderSelectedFilters(); renderGrid();
   updateGenderHeroVisibility();
@@ -2108,6 +2484,54 @@ function removeBrand(b){ activeBrands.delete(b); visibleCount = PAGE_SIZE; rende
 function removeModel(m){ activeModels.delete(m); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
 function setAvailFilter(key){ toggleSetFilter(activeAvailFilters, key); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
 function removeAvailFilter(key){ activeAvailFilters.delete(key); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function setQualityFilter(key){ toggleSetFilter(activeQualities, key); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function removeQualityFilter(key){ activeQualities.delete(key); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+
+// ---------- Filter panel: collapsible accordion sections ----------
+// All sections start collapsed (just headings visible) per the compact,
+// mobile-friendly panel design — each expands independently on tap.
+let openFilterSections = new Set();
+function toggleFilterSection(key){
+  const item = document.getElementById(`filterAccordion-${key}`);
+  if(!item) return;
+  const nowOpen = !openFilterSections.has(key);
+  if(nowOpen) openFilterSections.add(key); else openFilterSections.delete(key);
+  item.classList.toggle("open", nowOpen);
+  const header = item.querySelector(".filter-accordion-header");
+  if(header) header.setAttribute("aria-expanded", String(nowOpen));
+}
+
+// ---------- Filter panel: search box (Brand / Model) ----------
+// Filters the already-rendered Brand and Model chip lists by text match as
+// the person types, and auto-expands those two sections while searching so
+// matches are visible without an extra tap. Re-applied automatically at
+// the end of renderFilterSheet() so it survives re-renders (e.g. after
+// toggling a chip elsewhere in the panel).
+function filterOptionSearchInput(){
+  const input = document.getElementById("filterOptionSearch");
+  const q = input ? input.value.trim().toLowerCase() : "";
+
+  ["filterBrandRow", "filterModelRow"].forEach(rowId => {
+    const row = document.getElementById(rowId);
+    if(!row) return;
+    row.querySelectorAll(".filter-chip").forEach(chip => {
+      const text = chip.textContent.trim().toLowerCase();
+      chip.style.display = (!q || text.includes(q)) ? "" : "none";
+    });
+  });
+
+  if(q){
+    ["brand", "model"].forEach(key => {
+      const item = document.getElementById(`filterAccordion-${key}`);
+      if(item && !item.classList.contains("open")){
+        openFilterSections.add(key);
+        item.classList.add("open");
+        const header = item.querySelector(".filter-accordion-header");
+        if(header) header.setAttribute("aria-expanded", "true");
+      }
+    });
+  }
+}
 
 // Sizes are multi-select: tapping "Any size" clears every chosen size,
 // tapping a specific size toggles just that one on/off, so a shopper can
@@ -2141,7 +2565,7 @@ function onPriceSliderChange(){
 function clearAllFilters(){
   activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
   activeGender = null;
-  priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeFilter = "all"; activeSort = "latest";
+  priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all"; activeSort = "latest";
   visibleCount = PAGE_SIZE;
   document.getElementById("priceMinSlider").value = 0;
   document.getElementById("priceMaxSlider").value = 10000;
@@ -2175,7 +2599,7 @@ function goHome(){
   if(searchInput) searchInput.value = "";
   activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
   activeGender = null;
-  priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeFilter = "all"; activeSort = "latest";
+  priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all"; activeSort = "latest";
   visibleCount = PAGE_SIZE;
   document.getElementById("priceMinSlider").value = 0;
   document.getElementById("priceMaxSlider").value = 10000;
@@ -2189,7 +2613,7 @@ function goHome(){
 
 function updateFilterBadge(){
   const priceActive = priceMin > 0 || priceMax < 10000;
-  const count = [activeType!=="All", activeBrands.size>0, activeModels.size>0, priceActive, activeSizes.size>0, activeAvailFilters.size>0, activeSort!=="latest"].filter(Boolean).length;
+  const count = [activeType!=="All", activeBrands.size>0, activeModels.size>0, priceActive, activeSizes.size>0, activeQualities.size>0, activeAvailFilters.size>0, activeSort!=="latest"].filter(Boolean).length;
   const badge = document.getElementById("filterBadge");
   if(!badge) return;
   if(count > 0){ badge.style.display = "flex"; badge.textContent = count; }
@@ -2199,7 +2623,7 @@ function updateFilterBadge(){
 // Shows every active filter (brand, model, type, size, sort, price) as a
 // removable chip so the shopper can see everything that's narrowing the
 // grid at a glance and clear any one of them individually.
-const SORT_LABELS = { latest:"Newest", price_low:"Price: Low to High", price_high:"Price: High to Low" };
+const SORT_LABELS = { latest:"Newest", price_low:"Price: Low to High", price_high:"Price: High to Low", az:"Name: A-Z" };
 function renderSelectedFilters(){
   const row = document.getElementById("selectedFiltersRow");
   if(!row) return;
@@ -2210,6 +2634,10 @@ function renderSelectedFilters(){
   activeBrands.forEach(b => chips.push({ label:b, onclick:`removeBrand('${escForInlineJs(b)}')` }));
   activeModels.forEach(m => chips.push({ label:m, onclick:`removeModel('${escForInlineJs(m)}')` }));
   activeSizes.forEach(sz => chips.push({ label:`Size ${sz}`, onclick:`removeSize(${sz})` }));
+  activeQualities.forEach(key => {
+    const opt = QUALITY_OPTIONS.find(o => o.key === key);
+    chips.push({ label: opt.filterLabel, onclick:`removeQualityFilter('${key}')` });
+  });
   if(activeAvailFilters.has("cod")) chips.push({ label:"Cash on Delivery Available (COD)", onclick:`removeAvailFilter('cod')` });
   if(activeAvailFilters.has("return")) chips.push({ label:"Return Available", onclick:`removeAvailFilter('return')` });
   if(priceMin > 0 || priceMax < 10000) chips.push({ label:`₹${priceMin}-₹${priceMax}`, onclick:`resetPriceFilter()` });
@@ -2217,7 +2645,7 @@ function renderSelectedFilters(){
 
   if(chips.length === 0){ row.innerHTML = ""; return; }
   row.innerHTML = chips.map(c=>
-    `<button class="selected-filter-chip" onclick="${c.onclick}">${c.label} <span class="x">✕</span></button>`
+    `<button class="selected-filter-chip" onclick="${c.onclick}">${escapeHtml(c.label)} <span class="x">✕</span></button>`
   ).join("") + `<button class="selected-filters-clear" onclick="clearAllFilters()">Clear all</button>`;
 }
 function resetPriceFilter(){
@@ -2232,21 +2660,21 @@ function resetPriceFilter(){
 function renderFilterSheet(){
   if(!document.getElementById("filterTypeRow")) return;
 
-  const sortOptions = [["latest","Newest"], ["price_low","Price: Low to High"], ["price_high","Price: High to Low"]];
+  const sortOptions = [["latest","Newest"], ["price_low","Price: Low to High"], ["price_high","Price: High to Low"], ["az","Name: A-Z"]];
   document.getElementById("filterSortRow").innerHTML = sortOptions.map(([key,label])=>
     `<button class="filter-chip ${activeSort===key?'active':''}" onclick="setSort('${key}')">${label}</button>`
   ).join("");
 
   const types = ["All", ...new Set(SHOES.map(s=>categoryType(s.category)).filter(Boolean))].sort((a,b)=> a==="All" ? -1 : b==="All" ? 1 : a.localeCompare(b));
   document.getElementById("filterTypeRow").innerHTML = types.map(t=>
-    `<button class="filter-chip ${t===activeType?'active':''}" onclick="setType('${escForInlineJs(t)}')">${t}</button>`
+    `<button class="filter-chip ${t===activeType?'active':''}" onclick="setType('${escForInlineJs(t)}')">${escapeHtml(t)}</button>`
   ).join("");
 
   // Brand: multi-select. "All" is active only when nothing is chosen.
   const brands = ["All", ...new Set(SHOES.map(s=>s.brand).filter(Boolean))].sort((a,b)=> a==="All" ? -1 : b==="All" ? 1 : a.localeCompare(b));
   document.getElementById("filterBrandRow").innerHTML = brands.map(b=>{
     const active = b === "All" ? activeBrands.size === 0 : activeBrands.has(b);
-    return `<button class="filter-chip ${active?'active':''}" onclick="setBrand('${escForInlineJs(b)}')">${b}</button>`;
+    return `<button class="filter-chip ${active?'active':''}" onclick="setBrand('${escForInlineJs(b)}')">${escapeHtml(b)}</button>`;
   }).join("");
 
   // Only show models actually present in the current catalog — not the
@@ -2281,12 +2709,30 @@ function renderFilterSheet(){
   const secondaryLabelEl = document.getElementById("filterSizeLabelSecondary");
   if(secondaryLabelEl) secondaryLabelEl.textContent = sizeRanges.secondaryLabel;
 
+  // Quality filter chips — only shown for quality values that actually
+  // appear on at least one product in the catalog (loosely matched, so
+  // "Semi UA" and "Semi-UA" both count toward the same "Semi-UA" chip).
+  const presentQualities = new Set(SHOES.map(s => normalizeQuality(s.quality)).filter(Boolean));
+  const qualitySection = document.getElementById("filterAccordion-quality");
+  const qualityRow = document.getElementById("filterQualityRow");
+  if(qualitySection && qualityRow){
+    if(presentQualities.size === 0){
+      qualitySection.style.display = "none";
+    } else {
+      qualitySection.style.display = "";
+      qualityRow.innerHTML = QUALITY_OPTIONS
+        .filter(o => presentQualities.has(o.key))
+        .map(o => `<button class="filter-chip ${activeQualities.has(o.key)?'active':''}" onclick="setQualityFilter('${o.key}')" aria-pressed="${activeQualities.has(o.key)}">${o.filterLabel}</button>`)
+        .join("");
+    }
+  }
+
   // Availability filters (COD / Return) sit at the very bottom of the
   // panel and are conditionally shown — only when at least one product
   // in the catalog actually has that value set to TRUE.
   const anyCod = SHOES.some(s => s.codAvailable);
   const anyReturn = SHOES.some(s => s.returnAvailable);
-  const availSection = document.getElementById("filterAvailSection");
+  const availSection = document.getElementById("filterAccordion-avail");
   const availRow = document.getElementById("filterAvailRow");
   if(availSection && availRow){
     if(!anyCod && !anyReturn){
@@ -2301,6 +2747,7 @@ function renderFilterSheet(){
   }
 
   updateFilterBadge();
+  filterOptionSearchInput(); // re-apply any active search text to the freshly-rendered chips
 }
 
 function getFilteredShoes(){
@@ -2332,12 +2779,14 @@ function getFilteredShoes(){
       const matchesAnySelectedSize = [...activeSizes].some(sz => shoeMatchesSizeFilter(shoe, sz));
       if(!matchesAnySelectedSize) return false;
     }
+    if(activeQualities.size > 0 && !activeQualities.has(normalizeQuality(shoe.quality))) return false;
     if(activeAvailFilters.has("cod") && !shoe.codAvailable) return false;
     if(activeAvailFilters.has("return") && !shoe.returnAvailable) return false;
     return true;
   }).sort((a, b) => {
     if(activeSort === "price_low") return a.price - b.price;
     if(activeSort === "price_high") return b.price - a.price;
+    if(activeSort === "az") return a.name.localeCompare(b.name);
     return b.order - a.order; // latest-added first: later sheet rows = newer products
   });
 }
@@ -2382,16 +2831,16 @@ function renderGrid(){
 
     return `
       <div class="card" id="shoe-${shoe.id}" onclick="openItemDetail(${shoe.id})" role="button" tabindex="0"
-        aria-label="View details for ${shoe.name}"
+        aria-label="View details for ${escapeHtml(shoe.name)}"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openItemDetail(${shoe.id});}">
         <div class="imgwrap">
-          <img src="${shoe.images[0]}" alt="${shoe.name}" loading="lazy">
+          <img src="${escapeHtml(shoe.images[0])}" alt="${escapeHtml(shoe.name)}" loading="lazy">
           <div class="tag-row">${tags.join("")}</div>
           ${shoe.images.length > 1 ? `<div class="photo-count">📷 ${shoe.images.length}</div>` : ''}
         </div>
         <div class="body">
-          <div class="brand">${shoe.brand}</div>
-          <div class="name">${shoe.name}</div>
+          <div class="brand">${escapeHtml(shoe.brand)}</div>
+          <div class="name">${escapeHtml(shoe.name)}</div>
           <div class="price-row">
             <span class="price-now">₹${shoe.price}</span>
             ${hasDiscount ? `<span class="price-was">₹${shoe.marketPrice}</span>` : ''}
@@ -2513,7 +2962,7 @@ function renderItemDetail(){
 
   container.innerHTML = `
     <div class="item-detail-stage">
-      <img id="itemDetailImg" src="${shoe.images[itemDetailPhotoIndex]}" alt="${shoe.name} - photo ${itemDetailPhotoIndex+1} of ${photoCount}" onclick="openLightbox(${shoe.id}, ${itemDetailPhotoIndex})">
+      <img id="itemDetailImg" src="${escapeHtml(shoe.images[itemDetailPhotoIndex])}" alt="${escapeHtml(shoe.name)} - photo ${itemDetailPhotoIndex+1} of ${photoCount}" onclick="openLightbox(${shoe.id}, ${itemDetailPhotoIndex})">
       ${hasMultiplePhotos ? `
         <button class="lightbox-nav prev" onclick="itemDetailPhotoStep(-1)" aria-label="Previous photo">‹</button>
         <button class="lightbox-nav next" onclick="itemDetailPhotoStep(1)" aria-label="Next photo">›</button>
@@ -2528,10 +2977,10 @@ function renderItemDetail(){
 
     <div class="item-detail-info">
       <div class="item-detail-meta-row">
-        <div class="brand">${shoe.brand}</div>
+        <div class="brand">${escapeHtml(shoe.brand)}</div>
         <div class="item-detail-tags-inline">${tags.join("")}</div>
       </div>
-      <div class="item-detail-name">${shoe.name}</div>
+      <div class="item-detail-name">${escapeHtml(shoe.name)}</div>
       <div class="price-row">
         <span class="price-now">₹${shoe.price}</span>
         ${hasDiscount ? `<span class="price-was">₹${shoe.marketPrice}</span>` : ''}
@@ -2557,7 +3006,13 @@ function renderItemDetail(){
         ${shoe.returnAvailable ? '<div class="avail-line">✓ Return Available</div>' : ''}
       </div>` : ''}
 
-      <div class="item-detail-desc">${shoe.description ? shoe.description : 'Standard packaging.'}</div>
+      <div class="item-detail-desc">${[qualityLabel(shoe.quality), ...buildDescriptionLines(shoe.description)].filter(Boolean).map(line => `<div>${escapeHtml(line)}</div>`).join("")}</div>
+
+      <div class="item-detail-desc-links">
+        <a href="https://wa.me/${WHATSAPP_NUMBER}" target="_blank" rel="noopener">Contact Us</a>
+        <span class="item-detail-desc-links-sep">·</span>
+        <a href="#" onclick="event.preventDefault(); closeItemDetail(); openSheetById('policyOverlay');">Terms &amp; Policy</a>
+      </div>
     </div>
   `;
 }
@@ -2615,7 +3070,14 @@ function addToCart(shoeId){
   // SITE_URL above to be set to wherever the site is actually hosted.
   const link = `${SITE_URL}#shoe-${shoe.id}`;
 
-  cart.push({ shoeId, name:shoe.name, brand:shoe.brand, price, marketPrice, size, sizeSystem:shoe.sizeSystem, image:shoe.images[0], link, codAvailable:shoe.codAvailable, qty });
+  // If this exact shoe+size is already in the cart, just bump its quantity
+  // instead of adding a second, separate line for the same item.
+  const existingLine = cart.find(c => c.shoeId === shoeId && c.size === size);
+  if(existingLine){
+    existingLine.qty += qty;
+  } else {
+    cart.push({ shoeId, name:shoe.name, brand:shoe.brand, price, marketPrice, size, sizeSystem:shoe.sizeSystem, image:shoe.images[0], link, codAvailable:shoe.codAvailable, qty });
+  }
   updateCartCount();
 
   // Reset the quantity selector back to 1 for next time, so a leftover
@@ -2700,10 +3162,10 @@ function renderCartLines(){
     return `
     <div class="cart-line" onclick="openCartItemDetail(${item.shoeId})" role="button" tabindex="0"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openCartItemDetail(${item.shoeId});}">
-      <img src="${item.image}" alt="${item.name}">
+      <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
       <div class="info">
-        <div class="n">${item.name}</div>
-        <div class="m">${item.brand} · Size ${item.size} (${item.sizeSystem}) · Qty ${item.qty}</div>
+        <div class="n">${escapeHtml(item.name)}</div>
+        <div class="m">${escapeHtml(item.brand)} · Size ${item.size} (${item.sizeSystem}) · Qty ${item.qty}</div>
         <div class="m">₹${item.price} each${cartDiscountPct !== null ? ` <span class="price-was">₹${item.marketPrice}</span> <span class="tag sale" style="vertical-align:1px;">${cartDiscountPct}% OFF</span>` : ''}${item.qty>1 ? ` · ₹${item.price*item.qty} total` : ''}</div>
       </div>
       <button class="remove" onclick="event.stopPropagation(); removeFromCart(${idx})">Remove</button>
@@ -2762,15 +3224,15 @@ function submitOrder(e){
 
   const base = cart.reduce((sum,i)=>sum+i.price*i.qty, 0);
   const tier = SHIPPING_TIERS[selectedShipping];
-  const shipLabel = tier.cost === null ? "Cash on Delivery (amount to be confirmed based on weight)" : (tier.cost === 0 ? "Free (4-7 days)" : `Fast Shipping ₹300 (3-4 days)`);
-  const grandTotal = tier.cost === null ? `₹${base} + COD charge` : `₹${base + tier.cost}`;
+  const shipLabel = tier.cost === null ? "Cash on Delivery (amount to be confirmed based on weight)" : (tier.cost === 0 ? "Free (4-7 days)" : `Fast Shipping ₹300/- (3-4 days)`);
+  const grandTotal = tier.cost === null ? `₹${base}/- + COD charge` : `₹${base + tier.cost}/-`;
 
   let msg = `*${cart.length} PAIR${cart.length>1?'S':''} SHOES ORDER*\n\n`;
   cart.forEach((item, i) => {
     const cartDiscountPct = item.marketPrice ? Math.round(((item.marketPrice - item.price) / item.marketPrice) * 100) : null;
     const priceLine = cartDiscountPct !== null
-      ? `Price: ₹${item.price} each (Market Price: ₹${item.marketPrice}, ${cartDiscountPct}% OFF)${item.qty>1 ? ` (₹${item.price*item.qty} subtotal)` : ''}`
-      : `Price: ₹${item.price} each${item.qty>1 ? ` (₹${item.price*item.qty} subtotal)` : ''}`;
+      ? `Price: ₹${item.price}/- each (~₹${item.marketPrice}/-~ ${cartDiscountPct}% OFF)${item.qty>1 ? ` (₹${item.price*item.qty}/- subtotal)` : ''}`
+      : `Price: ₹${item.price}/- each${item.qty>1 ? ` (₹${item.price*item.qty}/- subtotal)` : ''}`;
     msg += `*PAIR ${i+1}*\nProduct: ${item.name}\nSize: ${item.size} (${item.sizeSystem})\nQuantity: ${item.qty}\n${priceLine}\nLink: ${item.link}\n\n`;
   });
 
@@ -2781,7 +3243,7 @@ function submitOrder(e){
   msg += `Town: ${town}\nDistrict: ${district}\nState: ${state}\nPincode: ${pin}\n`;
   msg += `Contact No.1: ${phone1}\nContact No.2: ${phone2 || "N/A"}\n\n`;
   if(remarks) msg += `*REMARKS / NOTES*\n${remarks}\n\n`;
-  msg += `*ORDER SUMMARY*\nBase Price: ₹${base}\nShipping: ${shipLabel}\n*GRAND TOTAL: ${grandTotal}*`;
+  msg += `*ORDER SUMMARY*\nBase Price: ₹${base}/-\nShipping: ${shipLabel}\n*GRAND TOTAL: ${grandTotal}*`;
 
   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
   window.open(url, "_blank");
