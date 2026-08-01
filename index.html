@@ -1664,61 +1664,144 @@ function rowsToShoes(rows){
   }).filter(s => s.name && s.images.length > 0);
 }
 
+// ---------- Catalog caching (localStorage) ----------
+// The whole catalog is fetched live from Google Sheets on every visit,
+// which can take several seconds — worse on mobile networks than on a
+// stable desktop connection. To make repeat visits feel instant, the raw
+// sheet rows are cached in localStorage and rendered immediately while a
+// fresh copy loads in the background; whatever the fresh fetch returns
+// then silently replaces the cached render and updates the cache for next
+// time. A first-ever visit with nothing cached still shows the normal
+// loading spinner exactly as before — this only speeds up repeat visits.
+const CATALOG_CACHE_KEY = "sneakix_catalog_cache_v1";
+
+function readCatalogCache(){
+  try {
+    const raw = localStorage.getItem(CATALOG_CACHE_KEY);
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    return (parsed && Array.isArray(parsed.rawRows) && parsed.rawRows.length > 0) ? parsed.rawRows : null;
+  } catch(e){
+    return null; // private browsing, corrupted cache, storage disabled, etc.
+  }
+}
+
+function writeCatalogCache(rawRows){
+  try {
+    if(rawRows.length === 0) return; // never let a failed/empty fetch overwrite a good cache
+    localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ rawRows, cachedAt: Date.now() }));
+  } catch(e){
+    // Storage full or unavailable — caching is a nice-to-have, safe to skip.
+  }
+}
+
+// Turns raw sheet rows into the live SHOES array and re-renders everything
+// that depends on it. Shared by both the instant cached render and the
+// fresh network render that follows it, so there's one source of truth.
+// isLiveFetch distinguishes the two passes for deep-link routing below.
+function applyCatalogRows(rawRows, isLiveFetch){
+  SHOES = rowsToShoes(rawRows);
+
+  if(activeCategory !== "All" && !SHOES.some(s => categoryMatches(s.category, activeCategory))) activeCategory = "All";
+  if(activeGender && !SHOES.some(s => shoeMatchesGender(s, activeGender))) activeGender = null;
+  if(activeType !== "All" && !SHOES.some(s => categoryType(s.category) === activeType)) activeType = "All";
+  for(const b of [...activeBrands]) if(!SHOES.some(s => s.brand === b)) activeBrands.delete(b);
+  for(const m of [...activeModels]) if(!SHOES.some(s => detectModel(s.name) === m)) activeModels.delete(m);
+
+  renderFilterStrip();
+  renderCategories();
+  renderFilterSheet();
+  renderHamburgerCategories();
+  updateHamburgerQuickFilterVisibility();
+  renderSelectedFilters();
+  renderGrid();
+  updateCartCount();
+  updateGenderHeroVisibility();
+  document.getElementById("grid").setAttribute("aria-busy", "false");
+
+  if(itemDetailShoeId !== null){
+    // The item detail page is already open — almost certainly because the
+    // instant cache render just opened it via a WhatsApp deep link. Refresh
+    // its content in place with the fresh data instead of re-running hash
+    // routing, which openItemDetail()'s own suppressHashRoute guard would
+    // otherwise silently swallow on this second pass.
+    if(SHOES.some(s => s.id === itemDetailShoeId)) renderItemDetail();
+    else closeItemDetail();
+  } else {
+    routeToShoeFromHashOnLoad(isLiveFetch);
+  }
+}
+
+// Deep-link routing used specifically during initial page load (cache pass
+// then live-fetch pass) — NOT the same as routeToShoeFromHash(), which
+// stays wired to the hashchange event for normal in-session navigation.
+// On the cache pass (isLiveFetch=false), a hash that doesn't match any
+// cached product is left alone rather than stripped, in case it's a
+// brand-new product the stale cache just doesn't know about yet — the
+// live fetch moments later gets the final say. Only the live-fetch pass
+// gives up and falls back to the homepage.
+function routeToShoeFromHashOnLoad(isLiveFetch){
+  const match = location.hash.match(/^#shoe-(\d+)$/);
+  if(!match){
+    document.documentElement.classList.remove("deep-link-pending");
+    return;
+  }
+  const id = Number(match[1]);
+  const shoe = SHOES.find(s => s.id === id);
+  if(shoe){
+    openItemDetail(shoe.id);
+    document.documentElement.classList.remove("deep-link-pending");
+  } else if(isLiveFetch){
+    // Genuinely doesn't exist even in fresh data — drop the hash and fall
+    // back to a normal homepage instead of leaving the shopper stuck on
+    // the "Opening product…" loader forever.
+    history.replaceState(null, "", location.pathname + location.search);
+    document.documentElement.classList.remove("deep-link-pending");
+  }
+  // else: the cache pass came up empty — leave the hash and loader alone
+  // and wait for the live fetch to make the final call.
+}
+
 function loadShoesFromSheet(){
+  const cachedRows = readCatalogCache();
+  if(cachedRows){
+    console.log(`[SNEAKIX] Rendered ${cachedRows.length} cached row(s) instantly — fetching a fresh copy in the background.`);
+    applyCatalogRows(cachedRows, false);
+  }
+
   Papa.parse(GOOGLE_SHEET_CSV_URL, {
     download: true,
     header: true,
     complete: function(results){
       const rawRows = results.data.filter(r => Object.values(r).some(v => v && String(v).trim()));
-      SHOES = rowsToShoes(rawRows);
-
-      // If a sheet edit removed the category/type/brand the shopper had
-      // selected, fall back to "All" instead of silently showing zero
-      // results for a filter that no longer means anything.
-      if(activeCategory !== "All" && !SHOES.some(s => categoryMatches(s.category, activeCategory))) activeCategory = "All";
-      if(activeGender && !SHOES.some(s => shoeMatchesGender(s, activeGender))) activeGender = null;
-      if(activeType !== "All" && !SHOES.some(s => categoryType(s.category) === activeType)) activeType = "All";
-      for(const b of [...activeBrands]) if(!SHOES.some(s => s.brand === b)) activeBrands.delete(b);
-      for(const m of [...activeModels]) if(!SHOES.some(s => detectModel(s.name) === m)) activeModels.delete(m);
 
       // Diagnostics — check the browser console (F12) if the grid looks empty.
       console.log(`[SNEAKIX] CSV columns detected:`, results.meta && results.meta.fields);
-      console.log(`[SNEAKIX] Raw non-blank rows: ${rawRows.length}, usable shoes after filtering: ${SHOES.length}`);
-      if(rawRows.length > 0 && SHOES.length === 0){
-        console.warn(`[SNEAKIX] Every row was dropped. Each row needs a non-empty "Name" AND at least one "Photo N Link". First raw row:`, rawRows[0]);
-      }
+      console.log(`[SNEAKIX] Raw non-blank rows: ${rawRows.length}`);
 
-      renderFilterStrip();
-      renderCategories();
-      renderFilterSheet();
-      renderHamburgerCategories();
-      updateHamburgerQuickFilterVisibility();
-      renderSelectedFilters();
-      renderGrid();
-      updateCartCount();
-      updateGenderHeroVisibility();
-      document.getElementById("grid").setAttribute("aria-busy", "false");
+      applyCatalogRows(rawRows, true);
+      writeCatalogCache(rawRows);
 
       if(SHOES.length === 0){
         const grid = document.getElementById("grid");
         if(rawRows.length === 0){
           grid.innerHTML = `<div class="grid-empty"><span class="emoji" aria-hidden="true">📄</span>The sheet loaded but has no data rows. Check that data is on the tab matching the "gid" in your CSV link, and that it isn't just a header row.</div>`;
         } else {
+          console.warn(`[SNEAKIX] Every row was dropped. Each row needs a non-empty "Name" AND at least one "Photo N Link". First raw row:`, rawRows[0]);
           grid.innerHTML = `<div class="grid-empty"><span class="emoji" aria-hidden="true">📄</span>Found ${rawRows.length} row(s) in the sheet, but none had both a "Name" and a "Photo 1 Link" filled in - those two are required for a shoe to show up. Open the browser console (F12) for details on the first dropped row.</div>`;
         }
       }
-
-      // Deep-link routing: if the URL points at a specific product (e.g.
-      // from a WhatsApp order link), open that exact product's detail
-      // page directly — regardless of current filters/pagination/sort —
-      // instead of relying on an in-grid anchor that may not be rendered.
-      routeToShoeFromHash();
     },
     error: function(err){
-      const grid = document.getElementById("grid");
-      grid.setAttribute("aria-busy", "false");
-      grid.innerHTML = `<div class="grid-empty"><span class="emoji" aria-hidden="true">⚠️</span>Couldn't load the catalog. Check the Google Sheet link is published correctly.</div>`;
-      document.documentElement.classList.remove("deep-link-pending");
+      // Only show the hard error state if there was nothing cached to fall
+      // back on — a failed background refresh shouldn't rip a working,
+      // cache-rendered page out from under someone mid-browse.
+      if(!cachedRows){
+        const grid = document.getElementById("grid");
+        grid.setAttribute("aria-busy", "false");
+        grid.innerHTML = `<div class="grid-empty"><span class="emoji" aria-hidden="true">⚠️</span>Couldn't load the catalog. Check the Google Sheet link is published correctly.</div>`;
+        document.documentElement.classList.remove("deep-link-pending");
+      }
       console.error(err);
     }
   });
@@ -1778,14 +1861,28 @@ window.addEventListener("load", syncHeaderHeightVar);
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncHeaderHeightVar);
 
 /* ---------- Hamburger drawer ---------- */
+// Body scroll lock, shared across every overlay type (cart, filters,
+// checkout, policy, size chart, item detail, lightbox, hamburger). Keyed
+// off whether ANY overlay is currently open rather than toggled
+// independently per overlay — so closing one overlay while another is
+// still open behind it (e.g. closing the lightbox while the item detail
+// page underneath is still open) doesn't incorrectly unlock the page and
+// let swipes/scrolls leak through to the background content.
+function updateBodyScrollLock(){
+  const anyOpen = document.querySelector(
+    ".overlay.open, .lightbox.open, .hamburger-overlay.open, .item-detail-overlay.open"
+  ) !== null;
+  document.body.style.overflow = anyOpen ? "hidden" : "";
+}
+
 function openHamburger(){
   renderHamburgerCategories();
   document.getElementById("hamburgerOverlay").classList.add("open");
-  document.body.style.overflow = "hidden";
+  updateBodyScrollLock();
 }
 function closeHamburger(){
   document.getElementById("hamburgerOverlay").classList.remove("open");
-  document.body.style.overflow = "";
+  updateBodyScrollLock();
 }
 
 // Category shortcuts inside the hamburger menu — built from whatever
@@ -1819,11 +1916,11 @@ function openLightbox(shoeId, index){
   lightboxIndex = index || 0;
   renderLightbox();
   document.getElementById("lightbox").classList.add("open");
-  document.body.style.overflow = "hidden";
+  updateBodyScrollLock();
 }
 function closeLightbox(){
   document.getElementById("lightbox").classList.remove("open");
-  document.body.style.overflow = "";
+  updateBodyScrollLock();
   lightboxShoeId = null;
 }
 function lightboxStep(dir){
@@ -1964,6 +2061,7 @@ window.addEventListener("keydown", (e) => {
     closeItemDetail();
     closeHamburger();
     closeLightbox();
+    updateBodyScrollLock();
   }
   if(itemDetailShoeId !== null){
     if(e.key === "ArrowLeft") itemDetailPhotoStep(-1);
@@ -2593,7 +2691,6 @@ function goHome(){
   closeSheet("policyOverlay");
   closeSheet("sizeChartOverlay");
   closeSheet("filterOverlay");
-  document.body.style.overflow = "";
   searchTerm = "";
   const searchInput = document.getElementById("searchInput");
   if(searchInput) searchInput.value = "";
@@ -2902,7 +2999,7 @@ function openItemDetail(shoeId){
   itemDetailPhotoIndex = 0;
   renderItemDetail();
   document.getElementById("itemDetailOverlay").classList.add("open");
-  document.body.style.overflow = "hidden";
+  updateBodyScrollLock();
   // Keep the URL in sync so this exact product can always be re-opened
   // (bookmarked, shared, or reached via a WhatsApp order link) straight
   // back to its own detail page.
@@ -2913,7 +3010,7 @@ function openItemDetail(shoeId){
 function closeItemDetail(){
   const el = document.getElementById("itemDetailOverlay");
   if(el) el.classList.remove("open");
-  document.body.style.overflow = "";
+  updateBodyScrollLock();
   itemDetailShoeId = null;
   suppressHashRoute = true;
   history.replaceState(null, "", location.pathname + location.search);
@@ -3115,8 +3212,8 @@ function updateCartCount(){
   }
 }
 
-function openCart(){ renderCartLines(); document.getElementById("cartOverlay").classList.add("open"); }
-function openSheetById(id){ document.getElementById(id).classList.add("open"); }
+function openCart(){ renderCartLines(); document.getElementById("cartOverlay").classList.add("open"); updateBodyScrollLock(); }
+function openSheetById(id){ document.getElementById(id).classList.add("open"); updateBodyScrollLock(); }
 
 function allItemsSupportCod(){ return cart.length > 0 && cart.every(i => i.codAvailable); }
 
@@ -3191,7 +3288,7 @@ function renderTotals(){
 }
 
 function removeFromCart(idx){ cart.splice(idx,1); updateCartCount(); renderCartLines(); }
-function closeSheet(id){ document.getElementById(id).classList.remove("open"); }
+function closeSheet(id){ document.getElementById(id).classList.remove("open"); updateBodyScrollLock(); }
 
 function openCheckout(){
   document.getElementById("cartOverlay").classList.remove("open");
