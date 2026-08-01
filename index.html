@@ -1524,15 +1524,23 @@
                       qualityLabel() for the exact mapping.
    images         -> array of image URLs, first is the main card image,
                       rest appear in the expanded gallery
-   description    -> slash-separated tags, e.g. "Brand Box/Extra
-                      Laces/Kerala" — NOT a full sentence, and NOT where
-                      Quality goes anymore (see the quality column above).
-                      A "Kerala" tag (exact match, any case) shows "2-4
-                      Days Delivery in Kerala." on its own line — the word
+   description    -> slash- or comma-separated tags, e.g. "Brand Box/Suede
+                      Leather/Kerala" — NOT a full sentence, and NOT where
+                      Quality goes (see the quality column above). A
+                      "Kerala" tag (exact match, any case) shows "2-4 Days
+                      Delivery in Kerala." on its own line — the word
                       "Kerala" itself is never displayed, it's just a
-                      trigger. Every other tag becomes part of a "Comes
-                      with ..." line ("Brand Box" shows as "the brand
-                      box"). Blank cell -> "Standard packaging." See
+                      trigger. Tags matching a known physical accessory
+                      (Brand Box, Bill Card, Dust Bag, Butter Paper, Carry
+                      Bag, Keychain, Extra Laces, Stickers, Tags, Poly Bag
+                      — see KNOWN_ACCESSORIES) all fold into one "Comes
+                      with ..." sentence. Any OTHER tag (materials, style
+                      notes, add-on pricing, anything not on that list —
+                      e.g. "Made in USA", "Suede Leather", "Cubon heel")
+                      shows verbatim as its own sentence, only the first
+                      letter forced capital, so acronyms are never
+                      mangled and new phrases never need a code change.
+                      Blank cell -> "Standard packaging." See
                       buildDescriptionLines() for the exact rules.
    ========================================================= */
 const WHATSAPP_NUMBER = "919778781170"; // <-- your real WhatsApp number, country code + number, no + or spaces
@@ -1542,7 +1550,7 @@ const INSTAGRAM_URL = "https://instagram.com/sneakix__"; // <-- verify this matc
 
 // PASTE your Google Sheet "Publish to web -> CSV" link here.
 // This is the ONLY line you need to update to connect your live sheet.
-const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSQnTkuatojteAYVHTwwfiXUFnnu0-VC0Ro2i06PSKKBUlBApmpiDgoUXYiP2F6gw/pub?gid=229738022&single=true&output=csv"
+const GOOGLE_SHEET_CSV_URL = "https://sneakix-catalog-cache.zorvex-support.workers.dev/"
 let SHOES = [];
 
 function toBool(v){ return String(v).trim().toUpperCase() === "TRUE"; }
@@ -2275,44 +2283,102 @@ function qualityLabel(rawQuality){
 }
 
 // Description cells are written as slash-separated tags, e.g.
-// "Brand Box/Extra Laces/Kerala" rather than a full sentence.
+// "Brand Box/Suede Leather/Kerala" rather than a full sentence.
 // This turns those tags into short display sentences:
 //   - a "Kerala" tag (exact match, case-insensitive) becomes its own line:
 //     "2-4 Days Delivery in Kerala." — the word "Kerala" itself is never
 //     shown, it's purely a trigger.
-//   - every other tag becomes part of a single "Comes with ..." line,
-//     with "Brand Box" specifically worded as "the brand box" and every
-//     other tag used as typed (lowercased) — joined with commas and "and".
+//   - tags matching a KNOWN_ACCESSORIES entry below (Brand Box, Dust Bag,
+//     Extra Laces, etc. — physical things that come in the box) all fold
+//     into one "Comes with ..." sentence, Title Cased and normalized
+//     (so "dustbag"/"Dust bag"/"DUSTBAG" all become "Dust Bag").
+//   - every OTHER tag (materials, quality notes, style descriptors, or
+//     anything not on the known list — e.g. "Made in USA", "Suede
+//     Leather", "Cubon heel", "crocs buttons (4 pcs) extra 50") becomes
+//     its own standalone sentence, shown exactly as typed except the
+//     first letter is forced capital — this deliberately does NOT
+//     lowercase or rewrite the rest, so acronyms like "USA" are never
+//     mangled and new phrases never need a code change to be recognized.
 //   - a blank cell falls back to "Standard packaging."
 // Returns an array of plain-text lines (already trimmed, not yet escaped —
 // callers must still run each line through escapeHtml before inserting).
+const KNOWN_ACCESSORIES = {
+  "brand box": "Brand Box",
+  "bill card": "Bill Card",
+  "bills": "Bill Card",
+  "bill": "Bill Card",
+  "same card": "Bill Card", // common shorthand/typo for Bill Card
+  "card": "Bill Card",
+  "dust bag": "Dust Bag",
+  "dustbag": "Dust Bag",
+  "butter paper": "Butter Paper",
+  "butterpaper": "Butter Paper",
+  "carry bag": "Carry Bag",
+  "keychain": "Keychain",
+  "key chain": "Keychain",
+  "stickers": "Stickers",
+  "sticker": "Stickers",
+  "poly bag": "Poly Bag",
+  "polybag": "Poly Bag",
+  "crocs polybag": "Crocs Poly Bag",
+  "tags": "Tags",
+  "tag": "Tags",
+};
+
+function matchKnownAccessory(tag){
+  const t = tag.trim().toLowerCase();
+
+  // "3 extra laces" / "extra lace" / "extra laces" -> "3 Extra Laces" etc.,
+  // preserving any leading quantity instead of losing it.
+  const laceMatch = t.match(/^(\d+\s+)?extra\s*laces?$/);
+  if(laceMatch) return (laceMatch[1] ? laceMatch[1].trim() + " " : "") + "Extra Laces";
+
+  // "3 tags" / "all tags" / "tags" -> "3 Tags" / "All Tags" / "Tags"
+  const tagMatch = t.match(/^(\d+|all)\s+tags?$/);
+  if(tagMatch) return (tagMatch[1] === "all" ? "All" : tagMatch[1]) + " Tags";
+
+  return KNOWN_ACCESSORIES[t] || null;
+}
+
 function buildDescriptionLines(rawDescription){
   const raw = (rawDescription || "").trim();
   if(!raw) return ["Standard packaging."];
 
-  const tags = raw.split("/").map(t => t.trim()).filter(Boolean);
+  const tags = raw.split(/[/,]/).map(t => t.trim()).filter(Boolean);
   const lines = [];
 
   const hasKerala = tags.some(t => t.toLowerCase() === "kerala");
   if(hasKerala) lines.push("2-4 Days Delivery in Kerala.");
 
-  // Title Case each extra as typed (e.g. "brand box" -> "Brand Box") rather
-  // than lowercasing it, so tags read as clean labels in the sentence.
-  const titleCase = str => str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-  const extras = tags
-    .filter(t => t.toLowerCase() !== "kerala")
-    .map(titleCase);
+  const remaining = tags.filter(t => t.toLowerCase() !== "kerala");
+  const accessories = [];
+  const standaloneLines = [];
 
-  if(extras.length === 1){
-    lines.push(`Comes with ${extras[0]}.`);
-  } else if(extras.length > 1){
-    const last = extras[extras.length - 1];
-    const rest = extras.slice(0, -1).join(", ");
+  for(const tag of remaining){
+    const accessory = matchKnownAccessory(tag);
+    if(accessory){
+      accessories.push(accessory);
+    } else {
+      // Not a recognized accessory — show verbatim as its own sentence,
+      // only forcing the first letter capital (never touching the rest,
+      // so "Made in USA" stays "Made in USA", not "Made in usa").
+      const capitalized = tag.charAt(0).toUpperCase() + tag.slice(1);
+      standaloneLines.push(capitalized.endsWith(".") ? capitalized : capitalized + ".");
+    }
+  }
+
+  lines.push(...standaloneLines);
+
+  if(accessories.length === 1){
+    lines.push(`Comes with ${accessories[0]}.`);
+  } else if(accessories.length > 1){
+    const last = accessories[accessories.length - 1];
+    const rest = accessories.slice(0, -1).join(", ");
     lines.push(`Comes with ${rest} and ${last}.`);
   }
 
-  // If neither a Kerala tag nor any extras were found (e.g. the cell had
-  // junk like just slashes), fall back rather than showing a blank block.
+  // If nothing at all was found (e.g. the cell had junk like just
+  // slashes), fall back rather than showing a blank block.
   if(lines.length === 0) lines.push("Standard packaging.");
 
   return lines;
