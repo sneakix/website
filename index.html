@@ -1198,9 +1198,6 @@
       <span class="icon" aria-hidden="true">🔍</span>
       <input id="searchInput" type="search" aria-label="Search by name, brand, or edition" placeholder="Search by name, brand, or edition…" oninput="onSearch()">
     </div>
-    <button class="filter-toggle" onclick="openSheetById('filterOverlay')" aria-label="Open filters">
-      <span aria-hidden="true">🎚️</span> Filters <span class="filter-badge" id="filterBadge">0</span>
-    </button>
   </div>
 </div>
 
@@ -1538,7 +1535,7 @@
         <div class="cart-total"><span>Grand Total</span><span id="sumTotal"></span></div>
       </div>
 
-      <button class="checkout-btn" id="checkoutBtn" onclick="openCheckout()" disabled>Confirm Order</button>
+      <button class="checkout-btn" id="checkoutBtn" onclick="openCheckout()" disabled>Place Order</button>
     </div>
   </div>
 </div>
@@ -1924,7 +1921,36 @@ let priceMax = 10000;
 let activeSizes = new Set();    // multi-select: empty set = "Any size". Numeric values (EU/UK/W all share one numeric space).
 let activeSort = "latest"; // latest | price_low | price_high
 let searchTerm = "";
-let cart = [];
+
+// ---------- Cart persistence (localStorage) ----------
+// Without this, the cart lived only in a JS variable — a page refresh,
+// the OS killing a backgrounded mobile browser tab, or an accidental tab
+// close would silently wipe out everything a customer had added, with no
+// way to recover it. Cart is now saved after every change and restored on
+// load, the same pattern already used for the catalog cache above.
+const CART_STORAGE_KEY = "sneakix_cart_v1";
+
+function saveCartToStorage(){
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  } catch(e){
+    // Storage full or unavailable (private browsing, etc.) — cart still
+    // works for this session, it just won't survive a reload.
+  }
+}
+
+function loadCartFromStorage(){
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e){
+    return [];
+  }
+}
+
+let cart = loadCartFromStorage();
 const selections = {};
 const quantities = {};          // shoeId -> chosen quantity on the item detail page, default 1
 let selectedShipping = "free";
@@ -2536,7 +2562,7 @@ function renderFilterStrip(){
       <span aria-hidden="true">⇅</span> Sort: ${SORT_LABELS[activeSort]} <span class="chevron-mini" aria-hidden="true">▾</span>
     </button>
     <button class="strip-btn filters-strip-btn" onclick="openSheetById('filterOverlay')" aria-label="Open filters">
-      <span aria-hidden="true">🎚️</span> Filters
+      <span aria-hidden="true">🎚️</span> Filters <span class="filter-badge" id="filterBadge">0</span>
     </button>
   ` + filters.map(([key,label])=>
     `<button class="pill ${activeFilter===key?'active':''}" onclick="setFilter('${key}')">${label}</button>`
@@ -2672,7 +2698,7 @@ function renderCategories(){
 function updateGenderHeroVisibility(){
   const hero = document.getElementById("genderHero");
   if(!hero) return;
-  hero.style.display = (activeGender === null && activeFilter === "all") ? "grid" : "none";
+  hero.style.display = (activeGender === null && activeFilter === "all" && searchTerm === "") ? "grid" : "none";
 }
 
 function setCategory(c){
@@ -2715,6 +2741,7 @@ function onSearch(){
   searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
   visibleCount = PAGE_SIZE;
   renderGrid();
+  updateGenderHeroVisibility();
 }
 
 // Size filter chips shown depend on which gender is active: Men's -> EU
@@ -3379,6 +3406,7 @@ function addToCart(shoeId){
 }
 
 function updateCartCount(){
+  saveCartToStorage();
   const el = document.getElementById("cartCount");
   const icon = document.getElementById("cartIcon");
   // Reflects total pairs ordered (summing quantity per line), not just the
@@ -3529,7 +3557,7 @@ function submitOrder(e){
   msg += `*ORDER SUMMARY*\nBase Price: ₹${base}/-\nShipping: ${shipLabel}\n*GRAND TOTAL: ${grandTotal}*`;
 
   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-  window.open(url, "_blank");
+  window.open(url, "_blank", "noopener");
 
   // Show a clear success state instead of leaving the customer looking at
   // the same cart/checkout screen with no sign anything happened.
@@ -3538,8 +3566,14 @@ function submitOrder(e){
   if(retryLink) retryLink.href = url;
   document.getElementById("orderConfirmation").style.display = "flex";
 
-  cart = [];
-  updateCartCount();
+  // Deliberately NOT clearing the cart here. window.open() gives no way to
+  // confirm WhatsApp actually opened (popup blocked, no WhatsApp installed,
+  // deep link silently failing on some browsers) — if it did fail, the
+  // cart needs to still be there for the "Didn't open? Tap here" retry
+  // link above, and for the customer to just find their items still in
+  // the cart if they come back later instead of having lost the order.
+  // The cart is cleared once they confirm they're done, in
+  // continueShopping() below.
 }
 
 function continueShopping(){
@@ -3547,6 +3581,11 @@ function continueShopping(){
   document.getElementById("checkoutForm").style.display = "";
   document.getElementById("orderConfirmation").style.display = "none";
   closeSheet("checkoutOverlay");
+
+  // Now that the customer has confirmed (by tapping Continue Shopping)
+  // that they're done with this order, it's safe to clear the cart.
+  cart = [];
+  updateCartCount();
 }
 
 loadShoesFromSheet();
