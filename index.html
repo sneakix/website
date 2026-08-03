@@ -5,6 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>SNEAKIX</title>
 <meta name="theme-color" content="#111111">
+
+<!-- Favicon (circular shoe-icon mark, not the header wordmark logo) -->
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+
+<!-- Open Graph / Twitter Card: what shows up when a product or the site
+     link is shared on WhatsApp, Instagram DMs, iMessage, etc. Without
+     these, a shared link shows as a bare URL with no title/image/preview.
+     og:image MUST be an absolute URL to a real hosted file — social
+     platforms fetch it independently and can't read inline base64. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SNEAKIX">
+<meta property="og:title" content="SNEAKIX — Premium Sneakers, Direct to You">
+<meta property="og:description" content="Shop premium sneakers at SNEAKIX. Browse the latest arrivals, order directly on WhatsApp, and get Cash on Delivery available.">
+<meta property="og:url" content="https://sneakix.pages.dev/">
+<meta property="og:image" content="https://sneakix.pages.dev/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SNEAKIX — Premium Sneakers, Direct to You">
+<meta name="twitter:description" content="Shop premium sneakers at SNEAKIX. Browse the latest arrivals, order directly on WhatsApp, and get Cash on Delivery available.">
+<meta name="twitter:image" content="https://sneakix.pages.dev/og-image.jpg">
+
 <script>
   // Runs synchronously, before the rest of the page has even been parsed.
   // If this load came from a WhatsApp/shared product link (#shoe-<id>),
@@ -276,11 +304,39 @@
 
   /* ---------- Filter pills ---------- */
   .filter-strip{
-    display:flex; gap:8px; overflow-x:auto;
+    display:flex; gap:8px;
     padding:14px 16px 8px;
     scrollbar-width:none;
   }
   .filter-strip::-webkit-scrollbar{display:none;}
+  /* Sort/Filters row: two equal-width, clearly visible buttons — replaces
+     the old single small "sort pill" that was easy to miss. Any legacy
+     quick-filter pills (currently unused, see renderFilterStrip) still
+     append after these two and keep scrolling behavior if ever reintroduced. */
+  .filter-strip{ overflow-x:visible; flex-wrap:wrap; }
+  .strip-btn{
+    flex:1 1 0; min-width:0;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:12px 14px;
+    min-height:46px;
+    font-size:12.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    border:1.5px solid var(--ink);
+    border-radius:var(--radius-md);
+    background:var(--paper);
+    color:var(--ink);
+    cursor:pointer;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-family:inherit;
+    transition:background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .strip-btn:hover{ background:rgba(17,17,17,0.06); }
+  .strip-btn:active{ transform:scale(0.97); }
+  .strip-btn .chevron-mini{ font-size:10px; opacity:0.7; flex:none; }
   .pill{
     flex:none;
     padding:9px 15px;
@@ -511,18 +567,43 @@
   @media (prefers-reduced-motion: reduce){ .sizes.shake{ animation:none; } }
 
   .add-btn{
-    margin-top:auto; padding:11px; border:none; border-radius:var(--radius-sm);
+    width:100%; margin-top:auto; padding:11px; border:none; border-radius:var(--radius-sm);
     background:var(--ink); color:var(--paper);
     font-weight:800; font-size:12.5px; text-transform:uppercase;
     letter-spacing:0.04em; cursor:pointer;
     font-family:inherit;
     min-height:42px;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    box-sizing:border-box;
     transition:background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   }
   .add-btn:not(:disabled):hover{ background:var(--ink-soft); }
   .add-btn:not(:disabled):active{ transform:scale(0.97); }
   .add-btn:disabled{ background:#e4e4e1; color:#a3a3a0; cursor:not-allowed; }
   .add-btn.added{ background:var(--success); color:var(--success-ink); }
+
+  /* Post-add "View Cart" prompt: appears right under Add to Cart the
+     moment an item is successfully added, so the customer can go straight
+     to checkout instead of having to hunt for the cart icon in the header. */
+  .post-add-row{
+    display:grid; grid-template-rows:0fr; opacity:0;
+    transition:grid-template-rows var(--dur-med) var(--ease), opacity var(--dur-med) var(--ease), margin-top var(--dur-med) var(--ease);
+    margin-top:0;
+  }
+  .post-add-row.show{ grid-template-rows:1fr; opacity:1; margin-top:8px; }
+  .post-add-row > div{ overflow:hidden; min-height:0; }
+  .view-cart-btn{
+    width:100%; padding:11px; border:1.5px solid var(--gold); border-radius:var(--radius-sm);
+    background:var(--paper); color:var(--ink);
+    font-weight:800; font-size:12.5px; text-transform:uppercase;
+    letter-spacing:0.04em; cursor:pointer;
+    font-family:inherit;
+    min-height:42px;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    transition:background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .view-cart-btn:hover{ background:var(--gold-soft); }
+  .view-cart-btn:active{ transform:scale(0.97); }
 
   /* ---------- Expanded detail ---------- */
   /* grid-rows 0fr->1fr trick animates height without JS measuring, and never clips overflowing focus rings */
@@ -1063,11 +1144,6 @@
   }
   .selected-filters-clear:hover{ border-color:var(--line-strong); color:var(--ink); }
 
-  /* Quick sort access pill, kept first in the filter strip for easy mobile reach */
-  .sort-quick-btn{
-    display:flex; align-items:center; gap:5px;
-  }
-
   .filter-sheet-actions{
     display:flex; gap:10px; margin-top:22px; padding-top:14px;
     border-top:1px solid var(--line);
@@ -1310,6 +1386,18 @@
     <h2 id="sizeChartHeading">Size Chart</h2>
     <p class="policy-sub">UK to EU conversion by brand</p>
     <div id="sizeChartContent"></div>
+  </div>
+</div>
+
+<!-- Sort-only sheet: just the 4 sort options (Newest / Price / A-Z). Kept
+     separate from the full Filters sheet below so the Sort button doesn't
+     dump the customer into Type/Brand/Price/Size filtering by mistake. -->
+<div class="overlay" id="sortOverlay" onclick="if(event.target===this) closeSheet('sortOverlay')">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sortHeading">
+    <button class="close-x" onclick="closeSheet('sortOverlay')" aria-label="Close">✕</button>
+    <div class="sheet-handle"></div>
+    <h2 id="sortHeading">Sort By</h2>
+    <div class="filter-chip-row" id="sortOnlyRow"></div>
   </div>
 </div>
 
@@ -2438,13 +2526,23 @@ function renderFilterStrip(){
   // duplicated here either.
   const filters = [];
 
-  // Sort quick-access pill kept first, so it's the easiest thing to reach
-  // on a mobile screen without opening the full filter sheet.
-  const sortPill = `<button class="pill sort-quick-btn" onclick="openSheetById('filterOverlay')">⇅ ${SORT_LABELS[activeSort]}</button>`;
-
-  strip.innerHTML = sortPill + filters.map(([key,label])=>
+  // Sort and Filters as two full-size, clearly visible buttons (not a
+  // small easy-to-miss pill) — both open the same filter sheet; Sort's
+  // label always reflects the current sort choice. This is a *second*
+  // entry point to the filter sheet in addition to the "Filters" button
+  // already at the very top next to search — that one is untouched.
+  const rowHtml = () => `
+    <button class="strip-btn sort-strip-btn" onclick="openSheetById('sortOverlay')" aria-label="Open sort options">
+      <span aria-hidden="true">⇅</span> Sort: ${SORT_LABELS[activeSort]} <span class="chevron-mini" aria-hidden="true">▾</span>
+    </button>
+    <button class="strip-btn filters-strip-btn" onclick="openSheetById('filterOverlay')" aria-label="Open filters">
+      <span aria-hidden="true">🎚️</span> Filters
+    </button>
+  ` + filters.map(([key,label])=>
     `<button class="pill ${activeFilter===key?'active':''}" onclick="setFilter('${key}')">${label}</button>`
   ).join("");
+
+  strip.innerHTML = rowHtml();
 
   // If the currently active filter's pill no longer exists (e.g. the last
   // sale item was removed from the sheet), fall back to "All" so the grid
@@ -2454,9 +2552,7 @@ function renderFilterStrip(){
   const HERO_ONLY_FILTERS = ["under2000", "premium3000", "new", "sale"];
   if(activeFilter !== "all" && !HERO_ONLY_FILTERS.includes(activeFilter) && !filters.some(([key]) => key === activeFilter)){
     activeFilter = "all";
-    strip.innerHTML = sortPill + filters.map(([key,label])=>
-      `<button class="pill ${activeFilter===key?'active':''}" onclick="setFilter('${key}')">${label}</button>`
-    ).join("");
+    strip.innerHTML = rowHtml();
   }
 }
 
@@ -2824,9 +2920,20 @@ function renderFilterSheet(){
   if(!document.getElementById("filterTypeRow")) return;
 
   const sortOptions = [["latest","Newest"], ["price_low","Price: Low to High"], ["price_high","Price: High to Low"], ["az","Name: A-Z"]];
-  document.getElementById("filterSortRow").innerHTML = sortOptions.map(([key,label])=>
+  const sortRowHtml = sortOptions.map(([key,label])=>
     `<button class="filter-chip ${activeSort===key?'active':''}" onclick="setSort('${key}')">${label}</button>`
   ).join("");
+  document.getElementById("filterSortRow").innerHTML = sortRowHtml;
+  // Standalone Sort sheet (opened from the Sort strip button): picking an
+  // option closes it immediately, which is the expected pattern for a
+  // single-purpose sort sheet (unlike the full Filters sheet, which needs
+  // "Show results" since multiple filters can be combined there).
+  const sortOnlyRow = document.getElementById("sortOnlyRow");
+  if(sortOnlyRow){
+    sortOnlyRow.innerHTML = sortOptions.map(([key,label])=>
+      `<button class="filter-chip ${activeSort===key?'active':''}" onclick="setSort('${key}'); closeSheet('sortOverlay');">${label}</button>`
+    ).join("");
+  }
 
   const types = ["All", ...new Set(SHOES.map(s=>categoryType(s.category)).filter(Boolean))].sort((a,b)=> a==="All" ? -1 : b==="All" ? 1 : a.localeCompare(b));
   document.getElementById("filterTypeRow").innerHTML = types.map(t=>
@@ -3164,6 +3271,12 @@ function renderItemDetail(){
         ${allSoldOut ? 'Out of Stock' : 'Add to Cart'}
       </button>
 
+      <div class="post-add-row" id="postAdd-${shoe.id}">
+        <div>
+          <button class="view-cart-btn" onclick="openCart()">View Cart <span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+
       ${(shoe.codAvailable || shoe.returnAvailable) ? `<div class="item-detail-avail-list">
         ${shoe.codAvailable ? '<div class="avail-line">✓ Cash on Delivery Available (COD)</div>' : ''}
         ${shoe.returnAvailable ? '<div class="avail-line">✓ Return Available</div>' : ''}
@@ -3256,6 +3369,13 @@ function addToCart(shoeId){
     btn.disabled = true;
     setTimeout(()=>{ btn.textContent="Add to Cart"; btn.classList.remove("added"); btn.disabled = false; }, 2200);
   }
+
+  // Surface a direct path to checkout right away — without this, customers
+  // were tapping Add to Cart and then had to go hunt for the small cart
+  // icon in the header themselves. Stays visible (not just a brief toast)
+  // since the customer may still want to keep browsing sizes/colors first.
+  const postAdd = document.getElementById(`postAdd-${shoeId}`);
+  if(postAdd) postAdd.classList.add("show");
 }
 
 function updateCartCount(){
