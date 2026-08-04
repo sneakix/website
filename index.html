@@ -1823,6 +1823,37 @@ function applyCatalogRows(rawRows, isLiveFetch){
   } else {
     routeToShoeFromHashOnLoad(isLiveFetch);
   }
+
+  // Now that the cart survives across visits (see cart persistence below),
+  // a customer could reopen the site days later with a cart line still
+  // holding a price the merchant has since changed in the sheet, or a
+  // product that's been removed entirely. Only reconcile against the live
+  // fetch, not the instant cache pass, since the cache itself could be the
+  // stale side.
+  if(isLiveFetch) reconcileCartWithCatalog();
+}
+
+function reconcileCartWithCatalog(){
+  if(cart.length === 0) return;
+  let changed = false;
+  cart = cart.filter(item => {
+    const shoe = SHOES.find(s => s.id === item.shoeId);
+    if(!shoe){ changed = true; return false; } // discontinued — drop the line
+    if(shoe.price !== item.price || shoe.marketPrice !== item.marketPrice || shoe.images[0] !== item.image || shoe.name !== item.name || shoe.brand !== item.brand){
+      item.price = shoe.price;
+      item.marketPrice = shoe.marketPrice;
+      item.image = shoe.images[0];
+      item.name = shoe.name;
+      item.brand = shoe.brand;
+      changed = true;
+    }
+    return true;
+  });
+  if(changed){
+    updateCartCount();
+    const cartOverlay = document.getElementById("cartOverlay");
+    if(cartOverlay && cartOverlay.classList.contains("open")) renderCartLines();
+  }
 }
 
 // Deep-link routing used specifically during initial page load (cache pass
