@@ -337,6 +337,10 @@
   .strip-btn:hover{ background:rgba(17,17,17,0.06); }
   .strip-btn:active{ transform:scale(0.97); }
   .strip-btn .chevron-mini{ font-size:10px; opacity:0.7; flex:none; }
+  .strip-btn-label{
+    flex:1 1 auto; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
   .pill{
     flex:none;
     padding:9px 15px;
@@ -1164,6 +1168,26 @@
   }
   .filter-apply-btn:hover{ background:var(--ink-soft); }
 </style>
+
+<!-- ===== Google Analytics 4 ===== -->
+<!-- Replace G-XXXXXXXXXX below with your real GA4 Measurement ID -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+
+<!-- ===== Microsoft Clarity ===== -->
+<!-- Replace YOUR_CLARITY_ID below with your real Clarity Project ID -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "YOUR_CLARITY_ID");
+</script>
 </head>
 <body>
 
@@ -1630,6 +1654,16 @@
    ========================================================= */
 const WHATSAPP_NUMBER = "919778781170"; // <-- your real WhatsApp number, country code + number, no + or spaces
 const SITE_URL = "https://sneakix.pages.dev/"; // <-- must exactly match wherever this site is actually live (update again if you move to a custom domain)
+
+// ---------- Analytics event tracking (GA4) ----------
+// Sends custom events to Google Analytics so you can see what customers
+// search for, click, and where they drop off in the cart/checkout flow.
+// Safe no-op if GA4 hasn't loaded (e.g. ad blocker, or ID not set yet).
+function trackEvent(name, params){
+  try {
+    if(typeof gtag === "function") gtag('event', name, params || {});
+  } catch(e){ /* analytics should never break the site */ }
+}
 const FACEBOOK_URL = "https://facebook.com/sneakix0"; // <-- verify this matches your actual Page URL
 const INSTAGRAM_URL = "https://instagram.com/sneakix__"; // <-- verify this matches your actual handle
 
@@ -2590,7 +2624,7 @@ function renderFilterStrip(){
   // already at the very top next to search — that one is untouched.
   const rowHtml = () => `
     <button class="strip-btn sort-strip-btn" onclick="openSheetById('sortOverlay')" aria-label="Open sort options">
-      <span aria-hidden="true">⇅</span> Sort: ${SORT_LABELS[activeSort]} <span class="chevron-mini" aria-hidden="true">▾</span>
+      <span aria-hidden="true">⇅</span><span class="strip-btn-label">Sort: ${SORT_LABELS[activeSort]}</span><span class="chevron-mini" aria-hidden="true">▾</span>
     </button>
     <button class="strip-btn filters-strip-btn" onclick="openSheetById('filterOverlay')" aria-label="Open filters">
       <span aria-hidden="true">🎚️</span> Filters <span class="filter-badge" id="filterBadge">0</span>
@@ -2624,6 +2658,7 @@ function setFilter(key){
   visibleCount = PAGE_SIZE;
   renderFilterStrip(); renderSelectedFilters(); renderGrid();
   updateGenderHeroVisibility();
+  trackEvent('select_filter', { filter_type: 'quick_filter', filter_value: key });
 }
 
 // Dedicated entry point for the "Under ₹2000"/"Premium Shoes" hero cards
@@ -2768,11 +2803,23 @@ function clearGenderFilter(){
   updateGenderHeroVisibility();
 }
 
+let searchTrackTimer = null;
 function onSearch(){
   searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
   visibleCount = PAGE_SIZE;
   renderGrid();
   updateGenderHeroVisibility();
+
+  // Debounced: only log once the customer pauses typing for a bit, not on
+  // every keystroke, so "air" -> "air f" -> "air force" doesn't spam three
+  // separate events for one search.
+  clearTimeout(searchTrackTimer);
+  if(searchTerm.length < 2) return;
+  searchTrackTimer = setTimeout(() => {
+    const resultCount = getFilteredShoes().length;
+    trackEvent('search', { search_term: searchTerm, result_count: resultCount });
+    if(resultCount === 0) trackEvent('search_zero_results', { search_term: searchTerm });
+  }, 800);
 }
 
 // Size filter chips shown depend on which gender is active: Men's -> EU
@@ -2864,7 +2911,7 @@ function setSizeFilter(sz){
   visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid();
 }
 function removeSize(sz){ activeSizes.delete(Number(sz)); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
-function setSort(mode){ activeSort = mode; visibleCount = PAGE_SIZE; renderFilterStrip(); renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function setSort(mode){ activeSort = mode; visibleCount = PAGE_SIZE; renderFilterStrip(); renderFilterSheet(); renderSelectedFilters(); renderGrid(); trackEvent('select_sort', { sort_value: mode }); }
 
 function onPriceSliderChange(){
   let min = Number(document.getElementById("priceMinSlider").value);
@@ -3231,6 +3278,7 @@ function openItemDetail(shoeId){
   renderItemDetail();
   document.getElementById("itemDetailOverlay").classList.add("open");
   updateBodyScrollLock();
+  trackEvent('view_item', { item_id: shoe.id, item_name: shoe.name, item_brand: shoe.brand, price: shoe.price });
   // Keep the URL in sync so this exact product can always be re-opened
   // (bookmarked, shared, or reached via a WhatsApp order link) straight
   // back to its own detail page.
@@ -3417,6 +3465,7 @@ function addToCart(shoeId){
     cart.push({ shoeId, name:shoe.name, brand:shoe.brand, price, marketPrice, size, sizeSystem:shoe.sizeSystem, image:shoe.images[0], link, codAvailable:shoe.codAvailable, qty });
   }
   updateCartCount();
+  trackEvent('add_to_cart', { item_id: shoe.id, item_name: shoe.name, item_brand: shoe.brand, price, size, quantity: qty });
 
   // Reset the quantity selector back to 1 for next time, so a leftover
   // quantity from this add doesn't silently carry into a future one.
@@ -3547,6 +3596,7 @@ function openCheckout(){
   // showing, rather than tapping "Continue Shopping".
   document.getElementById("checkoutForm").style.display = "";
   document.getElementById("orderConfirmation").style.display = "none";
+  trackEvent('begin_checkout', { value: cart.reduce((sum,item)=> sum + item.price*item.qty, 0), items: cart.length });
 }
 
 function backToCart(){
@@ -3593,6 +3643,7 @@ function submitOrder(e){
 
   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
   window.open(url, "_blank", "noopener");
+  trackEvent('generate_lead', { value: cart.reduce((sum,item)=> sum + item.price*item.qty, 0), items: cart.length, currency: "INR" });
 
   // Show a clear success state instead of leaving the customer looking at
   // the same cart/checkout screen with no sign anything happened.
