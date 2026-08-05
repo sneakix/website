@@ -341,6 +341,33 @@
     flex:1 1 auto; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
+  /* Sort button: "Sort ▾" on its own line up top, the active option on
+     its own line below. Splitting it into two lines (instead of cramming
+     "Sort: <option>" plus icon and chevron into one row) is what gives the
+     option text enough width to show in full instead of wrapping mid-word
+     or getting ellipsis-cut, even for the longer labels like "Low to high
+     price". */
+  .sort-strip-btn{
+    flex-direction:column;
+    gap:2px;
+    padding:8px 10px;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+  }
+  .strip-btn-top{
+    display:flex; align-items:center; justify-content:center; gap:4px;
+    font-size:10px; font-weight:700; letter-spacing:0.03em; opacity:0.6;
+    text-transform:uppercase;
+  }
+  .strip-btn-label--sort{
+    flex:none; width:100%;
+    font-size:12.5px;
+    overflow:visible; text-overflow:clip; white-space:normal;
+    word-break:break-word;
+    text-align:center;
+    line-height:1.2;
+  }
   .pill{
     flex:none;
     padding:9px 15px;
@@ -2623,8 +2650,9 @@ function renderFilterStrip(){
   // entry point to the filter sheet in addition to the "Filters" button
   // already at the very top next to search — that one is untouched.
   const rowHtml = () => `
-    <button class="strip-btn sort-strip-btn" onclick="openSheetById('sortOverlay')" aria-label="Open sort options">
-      <span aria-hidden="true">⇅</span><span class="strip-btn-label">Sort: ${SORT_LABELS[activeSort]}</span><span class="chevron-mini" aria-hidden="true">▾</span>
+    <button class="strip-btn sort-strip-btn" onclick="openSheetById('sortOverlay')" aria-label="Open sort options, currently ${SORT_LABELS[activeSort]}">
+      <span class="strip-btn-top"><span aria-hidden="true">⇅</span> Sort <span class="chevron-mini" aria-hidden="true">▾</span></span>
+      <span class="strip-btn-label strip-btn-label--sort">${SORT_LABELS[activeSort]}</span>
     </button>
     <button class="strip-btn filters-strip-btn" onclick="openSheetById('filterOverlay')" aria-label="Open filters">
       <span aria-hidden="true">🎚️</span> Filters <span class="filter-badge" id="filterBadge">0</span>
@@ -2930,7 +2958,7 @@ function onPriceSliderChange(){
 function clearAllFilters(){
   activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
   activeGender = null;
-  priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all"; activeSort = "latest";
+  priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all";
   visibleCount = PAGE_SIZE;
   document.getElementById("priceMinSlider").value = 0;
   document.getElementById("priceMaxSlider").value = 10000;
@@ -2977,7 +3005,7 @@ function goHome(){
 
 function updateFilterBadge(){
   const priceActive = priceMin > 0 || priceMax < 10000;
-  const count = [activeType!=="All", activeBrands.size>0, activeModels.size>0, priceActive, activeSizes.size>0, activeQualities.size>0, activeAvailFilters.size>0, activeSort!=="latest"].filter(Boolean).length;
+  const count = [activeType!=="All", activeBrands.size>0, activeModels.size>0, priceActive, activeSizes.size>0, activeQualities.size>0, activeAvailFilters.size>0].filter(Boolean).length;
   const badge = document.getElementById("filterBadge");
   if(!badge) return;
   if(count > 0){ badge.style.display = "flex"; badge.textContent = count; }
@@ -2987,7 +3015,11 @@ function updateFilterBadge(){
 // Shows every active filter (brand, model, type, size, sort, price) as a
 // removable chip so the shopper can see everything that's narrowing the
 // grid at a glance and clear any one of them individually.
-const SORT_LABELS = { latest:"Newest", price_low:"Price: Low to High", price_high:"Price: High to Low", az:"Name: A-Z" };
+const SORT_LABELS = { latest:"Newest", az:"Names: A-Z", price_low:"Price: Low to High", price_high:"Price: High to Low" };
+// Single source of truth for the 4 sort options (key -> label). Both the
+// full Filters sheet and the standalone Sort sheet read from this, so the
+// wording can never drift out of sync between the two places it's shown.
+const SORT_OPTIONS = Object.entries(SORT_LABELS);
 function renderSelectedFilters(){
   const row = document.getElementById("selectedFiltersRow");
   if(!row) return;
@@ -3005,7 +3037,6 @@ function renderSelectedFilters(){
   if(activeAvailFilters.has("cod")) chips.push({ label:"Cash on Delivery Available (COD)", onclick:`removeAvailFilter('cod')` });
   if(activeAvailFilters.has("return")) chips.push({ label:"Return Available", onclick:`removeAvailFilter('return')` });
   if(priceMin > 0 || priceMax < 10000) chips.push({ label:`₹${priceMin}-₹${priceMax}`, onclick:`resetPriceFilter()` });
-  if(activeSort !== "latest") chips.push({ label:SORT_LABELS[activeSort], onclick:`setSort('latest')` });
 
   if(chips.length === 0){ row.innerHTML = ""; return; }
   row.innerHTML = chips.map(c=>
@@ -3024,7 +3055,7 @@ function resetPriceFilter(){
 function renderFilterSheet(){
   if(!document.getElementById("filterTypeRow")) return;
 
-  const sortOptions = [["latest","Newest"], ["price_low","Price: Low to High"], ["price_high","Price: High to Low"], ["az","Name: A-Z"]];
+  const sortOptions = SORT_OPTIONS;
   const sortRowHtml = sortOptions.map(([key,label])=>
     `<button class="filter-chip ${activeSort===key?'active':''}" onclick="setSort('${key}')">${label}</button>`
   ).join("");
