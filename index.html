@@ -507,8 +507,10 @@
   }
   .card .imgwrap img{
     width:100%; height:100%; object-fit:cover;
-    transition:transform 420ms var(--ease);
+    transition:transform 420ms var(--ease), opacity 260ms ease;
+    opacity:0;
   }
+  .card .imgwrap img.loaded{ opacity:1; }
   .card:hover .imgwrap img{ transform:scale(1.06); }
   @media (prefers-reduced-motion: reduce){ .card:hover .imgwrap img{ transform:none; } }
 
@@ -2049,6 +2051,7 @@ let selectedShipping = "free";
 
 const PAGE_SIZE = 12;
 let visibleCount = PAGE_SIZE;
+let preloadNextBatchTimer = null;
 
 document.getElementById("hamburgerWaBtn").href = `https://wa.me/${WHATSAPP_NUMBER}`;
 document.getElementById("footerWhatsapp").href = `https://wa.me/${WHATSAPP_NUMBER}`;
@@ -2114,7 +2117,7 @@ function renderHamburgerCategories(){
   ).join("");
 }
 function jumpToCategory(c){
-  closeHamburger();
+  closeAllOverlays();
   clearAllFilters();
   setCategory(c);
   document.getElementById("grid").scrollIntoView({ behavior:"smooth", block:"start" });
@@ -2696,6 +2699,7 @@ function setFilter(key){
 // Women's hero cards behave, since this is also a "homepage entry point"
 // action rather than a quick in-page toggle.
 function selectPriceTierHero(key){
+  closeAllOverlays();
   activeFilter = key;
   activeGender = null; activeCategory = "All"; activeType = "All";
   activeBrands.clear(); activeModels.clear(); activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear();
@@ -2807,6 +2811,7 @@ function setCategory(c){
 // Model back to "All" so the shopper always lands on the unfiltered
 // Men's/Women's catalog first, exactly as the homepage cards promise.
 function setGender(g){
+  closeAllOverlays();
   activeGender = g; // "M" or "W"
   activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
   activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all";
@@ -2831,12 +2836,22 @@ function clearGenderFilter(){
   updateGenderHeroVisibility();
 }
 
+let searchRenderTimer = null;
 let searchTrackTimer = null;
 function onSearch(){
   searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
   visibleCount = PAGE_SIZE;
-  renderGrid();
-  updateGenderHeroVisibility();
+
+  // Debounced: rebuilding the whole grid (up to 12 full card templates,
+  // each with an image) on every single keystroke causes visible jank on
+  // slower phones, for work that's immediately thrown away on the next
+  // keystroke anyway. A short pause keeps typing itself instant and only
+  // rebuilds once input settles.
+  clearTimeout(searchRenderTimer);
+  searchRenderTimer = setTimeout(() => {
+    renderGrid();
+    updateGenderHeroVisibility();
+  }, 150);
 
   // Debounced: only log once the customer pauses typing for a bit, not on
   // every keystroke, so "air" -> "air f" -> "air force" doesn't spam three
@@ -2977,7 +2992,12 @@ function clearAllFilters(){
 // back to its default (category back to "All", matching the homepage
 // default so the Men's/Women's hero cards reappear), drops the
 // #shoe-... URL hash if present, and scrolls back to the top.
-function goHome(){
+// Any sheet/overlay (Size Chart, Policy, Cart, Checkout, Filters, Sort,
+// the full-screen lightbox, item detail, or the hamburger menu) needs to
+// be closed before jumping to a different view — otherwise it's left
+// sitting open, visually stacked on top of whatever the navigation just
+// changed underneath it.
+function closeAllOverlays(){
   closeItemDetail();
   closeHamburger();
   closeLightbox();
@@ -2986,6 +3006,11 @@ function goHome(){
   closeSheet("policyOverlay");
   closeSheet("sizeChartOverlay");
   closeSheet("filterOverlay");
+  closeSheet("sortOverlay");
+}
+
+function goHome(){
+  closeAllOverlays();
   searchTerm = "";
   const searchInput = document.getElementById("searchInput");
   if(searchInput) searchInput.value = "";
@@ -3213,6 +3238,52 @@ function showMoreItems(){
   renderGrid();
 }
 
+// Warms the browser's cache for the *next* "Show More" batch — so when the
+// customer actually clicks the button, those images are already downloaded
+// and appear instantly instead of triggering a fresh lazy-load. Skips
+// entirely if the browser has Data Saver on, or reports a slow connection,
+// since spending someone's limited mobile data on images they haven't
+// asked to see yet isn't a good trade for a budget shopping site.
+// Shared by every preload helper below: respects the browser's Data Saver
+// toggle and skips preloading on a reported slow connection, so none of
+// this speculative loading gets forced onto someone who's actively trying
+// to conserve mobile data.
+function shouldSkipPreload(){
+  const conn = navigator.connection || navigator.webkitConnection || navigator.mozConnection;
+  return !!(conn && (conn.saveData || conn.effectiveType === "2g" || conn.effectiveType === "slow-2g"));
+}
+
+function preloadNextBatchImages(fullList, count){
+  if(shouldSkipPreload()) return;
+
+  const nextBatch = fullList.slice(count, count + PAGE_SIZE);
+  nextBatch.forEach(shoe => {
+    const src = shoe.images[0];
+    if(!src) return;
+    const img = new Image();
+    if("fetchPriority" in img) img.fetchPriority = "low";
+    img.src = src;
+  });
+}
+
+// Fired on pointerdown (finger-down / mouse-down) on a product card or cart
+// line — earlier than the click itself completes — so a product's 2nd,
+// 3rd, etc. photos are already in flight by the time its detail page
+// opens, instead of only starting once the thumbnail strip is rendered.
+// images[0] is skipped since it's already loaded as the card/cart thumbnail.
+function preloadShoeSecondaryImages(shoeId){
+  if(shouldSkipPreload()) return;
+  const shoe = SHOES.find(s => s.id === shoeId);
+  if(!shoe || shoe.images.length < 2) return;
+
+  shoe.images.slice(1).forEach(src => {
+    if(!src) return;
+    const img = new Image();
+    if("fetchPriority" in img) img.fetchPriority = "low";
+    img.src = src;
+  });
+}
+
 function renderGrid(){
   const grid = document.getElementById("grid");
   const fullList = getFilteredShoes();
@@ -3225,7 +3296,14 @@ function renderGrid(){
 
   const list = fullList.slice(0, visibleCount);
 
-  grid.innerHTML = list.map(shoe=>{
+  // First 10 cards load their image immediately (not gated behind native
+  // lazy-loading's scroll-into-view trigger) — mainly so a customer
+  // scrolling fast right after page load doesn't hit a flash of empty
+  // image boxes a couple rows past the fold. Everything from the 11th
+  // card on stays loading="lazy" as before.
+  const EAGER_IMAGE_COUNT = 10;
+
+  grid.innerHTML = list.map((shoe, i)=>{
     const discountPct = shoeDiscountPercent(shoe);
     const hasDiscount = discountPct !== null;
 
@@ -3235,12 +3313,14 @@ function renderGrid(){
     else if(shoe.isSale) tags.push('<span class="tag sale">SALE</span>');
     if(shoe.isNew) tags.push('<span class="tag new">NEW</span>');
 
+    const imgLoading = i < EAGER_IMAGE_COUNT ? "eager" : "lazy";
+
     return `
-      <div class="card" id="shoe-${shoe.id}" onclick="openItemDetail(${shoe.id})" role="button" tabindex="0"
+      <div class="card" id="shoe-${shoe.id}" onclick="openItemDetail(${shoe.id})" onpointerdown="preloadShoeSecondaryImages(${shoe.id})" role="button" tabindex="0"
         aria-label="View details for ${escapeHtml(shoe.name)}"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openItemDetail(${shoe.id});}">
         <div class="imgwrap">
-          <img src="${escapeHtml(shoe.images[0])}" alt="${escapeHtml(shoe.name)}" loading="lazy">
+          <img src="${escapeHtml(shoe.images[0])}" alt="${escapeHtml(shoe.name)}" loading="${imgLoading}" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
           <div class="tag-row">${tags.join("")}</div>
           ${shoe.images.length > 1 ? `<div class="photo-count">📷 ${shoe.images.length}</div>` : ''}
         </div>
@@ -3257,6 +3337,14 @@ function renderGrid(){
   }).join("");
 
   renderShowMore(fullList.length);
+
+  // Debounced so rapid actions (typing in search, tapping filters) don't
+  // fire off a burst of preloads for batches that get discarded a moment
+  // later — only the settled, final "next batch" actually gets fetched.
+  clearTimeout(preloadNextBatchTimer);
+  preloadNextBatchTimer = setTimeout(() => {
+    preloadNextBatchImages(fullList, visibleCount);
+  }, 300);
 }
 
 let itemDetailShoeId = null;
@@ -3586,7 +3674,7 @@ function renderCartLines(){
   wrap.innerHTML = cart.map((item, idx) => {
     const cartDiscountPct = item.marketPrice ? Math.round(((item.marketPrice - item.price) / item.marketPrice) * 100) : null;
     return `
-    <div class="cart-line" onclick="openCartItemDetail(${item.shoeId})" role="button" tabindex="0"
+    <div class="cart-line" onclick="openCartItemDetail(${item.shoeId})" onpointerdown="preloadShoeSecondaryImages(${item.shoeId})" role="button" tabindex="0"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openCartItemDetail(${item.shoeId});}">
       <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
       <div class="info">
