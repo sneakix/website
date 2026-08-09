@@ -18,7 +18,7 @@
 <!-- Open Graph / Twitter Card: what shows up when a product or the site
      link is shared on WhatsApp, Instagram DMs, iMessage, etc. Without
      these, a shared link shows as a bare URL with no title/image/preview.
-     og:image MUST be an absolute URL to a real hosted file — social
+     og:image MUST be an absolute URL to a real hosted file - social
      platforms fetch it independently and can't read inline base64. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="SNEAKIX">
@@ -37,7 +37,7 @@
   // Runs synchronously, before the rest of the page has even been parsed.
   // If this load came from a WhatsApp/shared product link (#shoe-<id>),
   // flag it immediately so CSS can hide the homepage from the very first
-  // paint — otherwise the browser briefly shows the full homepage (hero
+  // paint - otherwise the browser briefly shows the full homepage (hero
   // cards, category chips, grid) before the data finishes loading and the
   // product overlay opens on top of it, which reads as a laggy flash.
   if(/^#shoe-\d+$/.test(location.hash)){
@@ -105,13 +105,13 @@
        space, so the footer sits flush at the bottom of the viewport on
        short pages (e.g. while the catalog is still loading) instead of
        leaving a gap of plain background below it. On normal, taller pages
-       this has no visible effect — everything scrolls exactly as before. */
+       this has no visible effect - everything scrolls exactly as before. */
   }
   img{max-width:100%; display:block;}
 
   /* While a #shoe-<id> link is resolving (see the inline script in
      <head>), the homepage itself is hidden so there's no flash of hero
-     cards/grid before the product overlay opens — just a brief, plain
+     cards/grid before the product overlay opens - just a brief, plain
      loading state instead. Removed automatically once the product opens
      (or falls back to the homepage if that product no longer exists). */
   .deep-link-pending .search-wrap,
@@ -184,7 +184,7 @@
   .header-side-left{ justify-content:flex-start; }
   .header-side-right{ justify-content:flex-end; }
   /* Logo sits above the wordmark, stacked vertically, identical on every
-     screen size — no side-by-side rearrangement at any breakpoint. */
+     screen size - no side-by-side rearrangement at any breakpoint. */
   .brand-block{
     grid-column:2;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -309,7 +309,7 @@
     scrollbar-width:none;
   }
   .filter-strip::-webkit-scrollbar{display:none;}
-  /* Sort/Filters row: two equal-width, clearly visible buttons — replaces
+  /* Sort/Filters row: two equal-width, clearly visible buttons - replaces
      the old single small "sort pill" that was easy to miss. Any legacy
      quick-filter pills (currently unused, see renderFilterStrip) still
      append after these two and keep scrolling behavior if ever reintroduced. */
@@ -514,7 +514,7 @@
   .card:hover .imgwrap img{ transform:scale(1.06); }
   @media (prefers-reduced-motion: reduce){ .card:hover .imgwrap img{ transform:none; } }
 
-  /* Loading state while the catalog fetches from Google Sheets — a single
+  /* Loading state while the catalog fetches from Google Sheets - a single
      centered spinner spanning the grid, same style as the deep-link loader. */
   .grid-loader{
     grid-column:1/-1;
@@ -886,7 +886,7 @@
   @media (prefers-reduced-motion: reduce){ .sheet{ transform:none; } }
 
   /* Cart drawer only: the item list + shipping options scroll, but the
-     totals/checkout bar at the bottom stays fixed in place — it no longer
+     totals/checkout bar at the bottom stays fixed in place - it no longer
      scrolls with the cart lines or jumps position when the cart is empty
      vs full. */
   .cart-sheet{
@@ -981,7 +981,7 @@
   }
   .policy-block .policy-title{ margin:0 0 6px; font-size:14px; text-transform:none; letter-spacing:0; color:var(--ink); font-weight:800; line-height:1.3; }
   .policy-block p{ margin:0; font-size:13px; line-height:1.6; }
-  .policy-list{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); line-height:1.65; }
+  .policy-list{ margin:0; padding-left:18px; font-size:13px; color:var(--ink); line-height:1.65; }
   .policy-list li{ margin-bottom:6px; }
   .policy-list li:last-child{ margin-bottom:0; }
 
@@ -989,6 +989,7 @@
   .size-chart-brands{ font-size:13px; font-weight:800; color:var(--ink); margin:0 0 8px; }
   .size-chart-sub{ font-size:11.5px; color:var(--muted); margin:-4px 0 10px; line-height:1.5; }
   .size-chart-table{ width:100%; border-collapse:collapse; font-size:13px; }
+  .size-chart-table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
   .size-chart-table th{
     text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em;
     color:var(--muted); padding:6px 10px; border-bottom:1.5px solid var(--line);
@@ -996,6 +997,47 @@
   .size-chart-table td{ padding:7px 10px; border-bottom:1px solid var(--line); color:var(--ink); font-weight:600; }
   .size-chart-table tr:last-child td{ border-bottom:none; }
   .size-chart-note{ font-size:11.5px; color:var(--muted); line-height:1.6; margin-top:4px; }
+
+  /* ---------- Size Guide / Policies: dedicated full pages ----------
+     Reuses .item-detail-overlay/.item-detail-back/.item-detail-scroll as
+     the page shell (same full-screen layout already used for product
+     detail) so these two new pages feel native to the site rather than
+     introducing a second visual language. Only what's genuinely new
+     (the topbar title, How to Measure section, and the single-open
+     brand accordion) gets its own rules below. */
+  .full-page-topbar{
+    display:flex; align-items:center; gap:12px;
+    padding:14px 18px; border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:var(--paper); z-index:4;
+  }
+  .full-page-topbar .item-detail-back{ position:static; box-shadow:none; flex:none; }
+  .full-page-topbar h1{ margin:0; font-size:16px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; }
+
+  .how-to-measure{ margin-bottom:26px; padding-bottom:22px; border-bottom:1px solid var(--line); }
+  .how-to-measure h3{ margin:0 0 14px; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); font-weight:700; }
+  .how-to-measure h3.in-between{ margin-top:20px; }
+  .foot-measure-img{ width:100%; max-width:280px; height:auto; display:block; margin:0 auto 14px; }
+  .foot-measure-caption{ text-align:center; font-size:11.5px; color:var(--muted); margin:-6px 0 16px; }
+  .how-to-measure-intro{ font-size:13.5px; color:var(--muted); line-height:1.6; margin:0 0 10px; }
+  .how-to-measure ul.policy-list{ margin-bottom:4px; }
+  .in-between-row{ font-size:13.5px; color:var(--ink); line-height:1.7; margin:0; }
+
+  /* Size Guide's brand accordion - same visual language as the filter
+     panel's accordion (.filter-accordion-*), but with its own JS toggle
+     function so only one brand chart is ever open at once, independent
+     of the filter panel's own multi-open accordion state. */
+  .size-guide-default{ margin-bottom:22px; }
+  .size-guide-default h4.size-guide-default-label{
+    display:flex; align-items:center; gap:6px;
+    font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); font-weight:800; margin:0 0 12px;
+  }
+  .size-guide-accordion{ border-top:1px solid var(--line); }
+  /* Scoped to the Size Chart only - deliberately not a change to the
+     shared .filter-accordion-header rule above, since that's also used by
+     the Filters panel, which shouldn't be affected by this. */
+  .size-guide-accordion .filter-accordion-header{ padding:19px 0; }
+  .size-guide-accordion .filter-accordion-header h3{ font-size:14px; }
+  .size-guide-accordion .filter-accordion-header .chevron{ font-size:15px; }
 
   .cart-line{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); align-items:center; cursor:pointer; }
   .cart-line img{width:58px; height:58px; object-fit:cover; border-radius:8px; background:#eee; flex:none;}
@@ -1326,8 +1368,8 @@
     <div class="hamburger-section-title" id="hamburgerHeading">Menu</div>
     <button class="hamburger-link" onclick="closeHamburger(); goHome();">Home</button>
     <a class="hamburger-link wa-link" id="hamburgerWaBtn" href="#" target="_blank" rel="noopener" onclick="closeHamburger()">Contact on WhatsApp</a>
-    <button class="hamburger-link" onclick="closeHamburger(); openSizeChart()">Size Chart</button>
-    <button class="hamburger-link no-border" onclick="closeHamburger(); openSheetById('policyOverlay')">Terms & Policy</button>
+    <button class="hamburger-link" onclick="closeHamburger(); openSizeGuidePage()">Size Chart</button>
+    <button class="hamburger-link no-border" onclick="closeHamburger(); openPoliciesPage()">Terms & Policy</button>
 
     <div class="hamburger-divider"></div>
     <div class="hamburger-cats">
@@ -1355,89 +1397,113 @@
   <div class="lightbox-thumbs" id="lightboxThumbs"></div>
 </div>
 
-<!-- Policy sheet -->
-<div class="overlay" id="policyOverlay" onclick="if(event.target===this) closeSheet('policyOverlay')">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="policyHeading">
-    <button class="close-x" onclick="closeSheet('policyOverlay')" aria-label="Close">✕</button>
-    <div class="sheet-handle"></div>
-    <h2 id="policyHeading">Terms &amp; Policy</h2>
-    <p class="policy-sub">Please read carefully before placing your order</p>
+<!-- Policies - dedicated full page (was a bottom-sheet overlay) -->
+<div class="item-detail-overlay" id="policiesPage" role="dialog" aria-modal="true" aria-labelledby="policyHeading">
+  <div class="full-page-topbar">
+    <button class="item-detail-back" onclick="history.back()" aria-label="Back">← Back</button>
+    <h1 id="policyHeading">Terms &amp; Policy</h1>
+  </div>
+  <div class="item-detail-scroll">
+    <div class="item-detail-info">
+      <p class="policy-sub">Please read carefully before placing your order</p>
 
-    <div class="policy-block">
-      <div class="policy-num">1</div>
-      <div>
-        <h3 class="policy-title">Shipping &amp; Delivery</h3>
-        <p>Our standard delivery window is 4-7 working days.</p>
-        <p>While we strive for fast delivery, SNEAKIX is not responsible for delays caused by courier logistics, weather conditions, or other transit-related issues. We kindly request your patience in such situations, as these delays are beyond our control.</p>
+      <div class="policy-block">
+        <div class="policy-num">1</div>
+        <div>
+          <h3 class="policy-title">Shipping &amp; Delivery</h3>
+          <p>Our standard delivery window is 4-7 working days.</p>
+          <p>While we strive for fast delivery, SNEAKIX is not responsible for delays caused by courier logistics, weather conditions, or other transit-related issues. We kindly request your patience in such situations, as these delays are beyond our control.</p>
+        </div>
+      </div>
+
+      <div class="policy-block">
+        <div class="policy-num">2</div>
+        <div>
+          <h3 class="policy-title">Replacement Policy (360° Unboxing Video Rule)</h3>
+          <p>We offer a replacement only if the product is damaged, you receive the wrong color, or you receive the wrong item due to an error on our part.</p>
+          <p>To be eligible for a replacement, you must provide a single continuous 360° unboxing video.</p>
+          <p style="margin-top:10px; font-weight:700;">The video must:</p>
+          <ul class="policy-list">
+            <li>Start before opening the parcel.</li>
+            <li>Clearly show all sides of the sealed package.</li>
+            <li>Record the complete unboxing process without interruption.</li>
+            <li>Clearly show every angle of the received product.</li>
+          </ul>
+          <p style="margin-top:10px;"><strong>Important:</strong> Any edited, cut, or paused video will be automatically rejected.</p>
+        </div>
+      </div>
+
+      <div class="policy-block">
+        <div class="policy-num">3</div>
+        <div>
+          <h3 class="policy-title">Reporting Window</h3>
+          <p>Any complaint regarding damaged or incorrect products must be reported within 24 hours of the delivery time recorded by the courier. Complaints received after 24 hours will not be entertained.</p>
+        </div>
+      </div>
+
+      <div class="policy-block">
+        <div class="policy-num">4</div>
+        <div>
+          <h3 class="policy-title">Sizing Issues</h3>
+          <p><strong>Customer Error:</strong> We do not offer returns or replacements if the customer orders the wrong size. Please refer to our size chart carefully before placing your order.</p>
+          <p style="margin-top:8px;"><strong>Size Exchange:</strong> Size exchange is available only if the requested size is in stock, and the customer is responsible for two-way shipping charges.</p>
+          <p style="margin-top:8px;"><strong>Our Error:</strong> If we send a size different from the one you ordered, we will replace it free of charge, subject to the 360° unboxing video requirement.</p>
+        </div>
+      </div>
+
+      <div class="policy-block">
+        <div class="policy-num">5</div>
+        <div>
+          <h3 class="policy-title">Return and Refund Policy</h3>
+          <p>At SNEAKIX, most products are sold under a No Return &amp; No Refund policy. All sales are final once an order is placed.</p>
+          <p>However, selected products may be eligible for Returns or Cash on Delivery (COD). If applicable, this will be clearly stated on the product page.</p>
+          <p>If a product does not explicitly mention that Returns or COD are available, the standard No Return &amp; No Refund policy applies.</p>
+        </div>
+      </div>
+
+      <div class="policy-block">
+        <div class="policy-num">6</div>
+        <div>
+          <h3 class="policy-title">Contact Us</h3>
+          <p>If you have any questions regarding your order or these policies, please contact us through our official WhatsApp or Instagram account.</p>
+          <p style="margin-top:14px; font-weight:800; font-size:14px;">Thank you for choosing SNEAKIX.</p>
+        </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <div class="policy-block">
-      <div class="policy-num">2</div>
-      <div>
-        <h3 class="policy-title">Replacement Policy (360° Unboxing Video Rule)</h3>
-        <p>We offer a replacement only if the product is damaged, you receive the wrong color, or you receive the wrong item due to an error on our part.</p>
-        <p>To be eligible for a replacement, you must provide a single continuous 360° unboxing video.</p>
-        <p style="margin-top:10px; font-weight:700;">The video must:</p>
+<!-- Size Guide - dedicated full page (was a bottom-sheet overlay) -->
+<div class="item-detail-overlay" id="sizeGuidePage" role="dialog" aria-modal="true" aria-labelledby="sizeChartHeading">
+  <div class="full-page-topbar">
+    <button class="item-detail-back" onclick="history.back()" aria-label="Back">← Back</button>
+    <h1 id="sizeChartHeading">Size Chart</h1>
+  </div>
+  <div class="item-detail-scroll">
+    <div class="item-detail-info">
+
+      <div class="how-to-measure">
+        <h3>How to Measure?</h3>
+        <img class="foot-measure-img" src="images/size-guide-foot.jpg" alt="Diagram of a foot with an arrow measuring from the heel to the longest toe">
+        <p class="foot-measure-caption">Heel to longest toe</p>
+        <p class="how-to-measure-intro">To select the correct size, we recommend you measure your feet using the following guideline:</p>
         <ul class="policy-list">
-          <li>Start before opening the parcel.</li>
-          <li>Clearly show all sides of the sealed package.</li>
-          <li>Record the complete unboxing process without interruption.</li>
-          <li>Clearly show every angle of the received product.</li>
+          <li>Wear the kind of socks you would normally wear.</li>
+          <li>Stand up straight on a flat surface with your heel against a wall. If necessary, ask someone to help you take the measurements.</li>
+          <li>Measure from the base of your heel, keeping it pressed against the wall, to the tip of your longest toe.</li>
+          <li>Always measure both feet and use your longest foot as your benchmark.</li>
         </ul>
-        <p style="margin-top:10px;"><strong>Important:</strong> Any edited, cut, or paused video will be automatically rejected.</p>
+        <h3 class="in-between">In Between Sizes?</h3>
+        <p class="in-between-row">For a tight fit, go one size down.</p>
+        <p class="in-between-row">For a loose fit, go one size up.</p>
       </div>
-    </div>
 
-    <div class="policy-block">
-      <div class="policy-num">3</div>
-      <div>
-        <h3 class="policy-title">Reporting Window</h3>
-        <p>Any complaint regarding damaged or incorrect products must be reported within 24 hours of the delivery time recorded by the courier. Complaints received after 24 hours will not be entertained.</p>
-      </div>
-    </div>
-
-    <div class="policy-block">
-      <div class="policy-num">4</div>
-      <div>
-        <h3 class="policy-title">Sizing Issues</h3>
-        <p><strong>Customer Error:</strong> We do not offer returns or replacements if the customer orders the wrong size. Please refer to our size chart carefully before placing your order.</p>
-        <p style="margin-top:8px;"><strong>Size Exchange:</strong> Size exchange is available only if the requested size is in stock, and the customer is responsible for two-way shipping charges.</p>
-        <p style="margin-top:8px;"><strong>Our Error:</strong> If we send a size different from the one you ordered, we will replace it free of charge, subject to the 360° unboxing video requirement.</p>
-      </div>
-    </div>
-
-    <div class="policy-block">
-      <div class="policy-num">5</div>
-      <div>
-        <h3 class="policy-title">Return and Refund Policy</h3>
-        <p>At SNEAKIX, most products are sold under a No Return &amp; No Refund policy. All sales are final once an order is placed.</p>
-        <p>However, selected products may be eligible for Returns or Cash on Delivery (COD). If applicable, this will be clearly stated on the product page.</p>
-        <p>If a product does not explicitly mention that Returns or COD are available, the standard No Return &amp; No Refund policy applies.</p>
-      </div>
-    </div>
-
-    <div class="policy-block">
-      <div class="policy-num">6</div>
-      <div>
-        <h3 class="policy-title">Contact Us</h3>
-        <p>If you have any questions regarding your order or these policies, please contact us through our official WhatsApp or Instagram account.</p>
-        <p style="margin-top:14px; font-weight:800; font-size:14px;">Thank you for choosing SNEAKIX.</p>
-      </div>
+      <p class="policy-sub">EU to UK conversion by brand</p>
+      <div id="sizeChartContent"></div>
     </div>
   </div>
 </div>
 
-<!-- Size chart guide -->
-<div class="overlay" id="sizeChartOverlay" onclick="if(event.target===this) closeSheet('sizeChartOverlay')">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sizeChartHeading">
-    <button class="close-x" onclick="closeSheet('sizeChartOverlay')" aria-label="Close">✕</button>
-    <div class="sheet-handle"></div>
-    <h2 id="sizeChartHeading">Size Chart</h2>
-    <p class="policy-sub">UK to EU conversion by brand</p>
-    <div id="sizeChartContent"></div>
-  </div>
-</div>
 
 <!-- Sort-only sheet: just the 4 sort options (Newest / Price / A-Z). Kept
      separate from the full Filters sheet below so the Sort button doesn't
@@ -1629,7 +1695,7 @@
 
 <script>
 /* =========================================================
-   ⚙️ SHOE DATA — replace this array with your real catalog.
+   ⚙️ SHOE DATA - replace this array with your real catalog.
 
    name           -> free-form, override for limited editions
                       e.g. "Air Jordan 1 Coca-Cola Edition"
@@ -1641,13 +1707,13 @@
                       automatically as ((marketPrice-price)/marketPrice)*100,
                       rounded. Leave blank for no discount. If it's left
                       blank, or is not actually higher than price, no
-                      strikethrough/badge is shown — there is no manual
+                      strikethrough/badge is shown - there is no manual
                       discount % field anywhere.
    sizeSystem     -> "EU" or "UK"
    sizes          -> range string "40-45" OR explicit list [7,8,9,10]
    soldOutSizes   -> array of sizes to disable, e.g. [43]. Put "All" (or
                       "ALL") in this cell instead to mark the ENTIRE
-                      product sold out — disables Add to Cart and shows a
+                      product sold out - disables Add to Cart and shows a
                       SOLD OUT tag, without listing every size.
    codAvailable   -> true/false
    returnAvailable-> true/false, shows "Return Available" on the item page
@@ -1656,24 +1722,24 @@
                       cut. Ignored if marketPrice already produces a real
                       discount % (the % badge takes priority over this).
    quality        -> ONLY recognized values (case-insensitive): 7A, 10A,
-                      UA, Semi UA. Anything else is ignored — no quality
+                      UA, Semi UA. Anything else is ignored - no quality
                       line shown. Displayed at the very start of the
                       description block, e.g. "10A Quality." See
                       qualityLabel() for the exact mapping.
    images         -> array of image URLs, first is the main card image,
                       rest appear in the expanded gallery
    description    -> slash- or comma-separated tags, e.g. "Brand Box/Suede
-                      Leather/Kerala" — NOT a full sentence, and NOT where
+                      Leather/Kerala" - NOT a full sentence, and NOT where
                       Quality goes (see the quality column above). A
                       "Kerala" tag (exact match, any case) shows "2-4 Days
-                      Delivery in Kerala." on its own line — the word
+                      Delivery in Kerala." on its own line - the word
                       "Kerala" itself is never displayed, it's just a
                       trigger. Tags matching a known physical accessory
                       (Brand Box, Bill Card, Dust Bag, Butter Paper, Carry
                       Bag, Keychain, Extra Laces, Stickers, Tags, Poly Bag
-                      — see KNOWN_ACCESSORIES) all fold into one "Comes
+                      - see KNOWN_ACCESSORIES) all fold into one "Comes
                       with ..." sentence. Any OTHER tag (materials, style
-                      notes, add-on pricing, anything not on that list —
+                      notes, add-on pricing, anything not on that list -
                       e.g. "Made in USA", "Suede Leather", "Cubon heel")
                       shows verbatim as its own sentence, only the first
                       letter forced capital, so acronyms are never
@@ -1714,7 +1780,7 @@ function getRowValue(r, ...keys){
 }
 
 // NOTE: COD/Return availability is no longer shown as a badge on the grid
-// card or in the item-detail meta row — it now displays as full-text lines
+// card or in the item-detail meta row - it now displays as full-text lines
 // below the Add to Cart button on the item detail page (see renderItemDetail).
 function toIntList(v){
   if(!v) return [];
@@ -1725,14 +1791,14 @@ function toIntList(v){
 // the sheet. This is the fix for the "WhatsApp link opens the wrong
 // product" bug: the old code used `idx+1` (the row's position at load
 // time) as the product ID, so inserting or reordering rows in Google
-// Sheets silently reassigned every later product's ID — a link generated
+// Sheets silently reassigned every later product's ID - a link generated
 // before the change would then point at a totally different product
 // after the sheet was edited. Hashing the product's own identifying
 // fields means its ID never shifts because of unrelated rows, so a
 // generated link, the ID on record, and the actual product always match,
 // even after new products are added.
 // If the sheet has its own "Product ID"/"SKU"/"ID" column, that value is
-// used instead (still hashed to a compact number) — set one there if you
+// used instead (still hashed to a compact number) - set one there if you
 // want full control over IDs, e.g. across a full catalog rename.
 function hashId(str){
   let h = 5381;
@@ -1755,7 +1821,7 @@ function rowsToShoes(rows){
     // Gender now comes from its own sheet column (M / W / MW) instead of
     // being guessed from words inside Category. Anything missing or not
     // exactly M/W/MW defaults to "MW" (shown under both Men's and
-    // Women's Footwear) rather than disappearing from both — safer while
+    // Women's Footwear) rather than disappearing from both - safer while
     // the sheet is still being backfilled with this column.
     const genderRaw = (r["Gender"] || "").trim().toUpperCase();
     const gender = (genderRaw === "M" || genderRaw === "W" || genderRaw === "MW") ? genderRaw : "MW";
@@ -1764,20 +1830,20 @@ function rowsToShoes(rows){
     // the same shoe listed twice, or two color variants under one name).
     // Falling back to just those three fields would hash them to the same
     // ID, and SHOES.find(s => s.id === id) would then always return the
-    // first one — silently hiding the second product's own page, images,
+    // first one - silently hiding the second product's own page, images,
     // and WhatsApp link behind the first product's. Including the first
     // photo URL breaks that tie, since duplicate-name rows still have
     // different images.
     const idBasis = explicitId || `${brand}|${name}|${category}|${images[0] || ""}`;
     const price = parseInt(r["Price"], 10) || 0;
-    // Quality is its own sheet column now — only 7A / 10A / UA / Semi UA
+    // Quality is its own sheet column now - only 7A / 10A / UA / Semi UA
     // are recognized (case-insensitive); anything else is ignored, see
     // qualityLabel(). Stored raw here.
     const quality = (r["Quality"] || "").trim();
 
     // Description is written as slash-separated tags (e.g.
     // "Brand Box/Extra Laces/Kerala") and turned into sentences at render
-    // time by buildDescriptionLines() — see that function for the rules.
+    // time by buildDescriptionLines() - see that function for the rules.
     // Raw value is stored as-is here; no auto-fallback based on price.
     const description = (r["Description"] || "").trim();
 
@@ -1792,7 +1858,7 @@ function rowsToShoes(rows){
       quality,
       // "Market Price" is an optional, higher reference price used only to
       // show a strikethrough + compute a discount %. "Price" is ALWAYS the
-      // actual selling price shown prominently — it is never struck through.
+      // actual selling price shown prominently - it is never struck through.
       marketPrice: (() => {
         const raw = r["Market Price"];
         if(!raw || !raw.trim()) return null;
@@ -1803,7 +1869,7 @@ function rowsToShoes(rows){
       sizes: (r["Sizes"] || "").trim(),
       soldOutSizes: toIntList(r["Sold Out Sizes"]),
       // A "Sold Out Sizes" cell containing just "All"/"ALL" (rather than a
-      // list of specific sizes) means the whole product is out of stock —
+      // list of specific sizes) means the whole product is out of stock -
       // this disables Add to Cart entirely instead of needing every size
       // listed individually.
       soldOutAll: /^all$/i.test((r["Sold Out Sizes"] || "").trim()),
@@ -1822,13 +1888,13 @@ function rowsToShoes(rows){
 
 // ---------- Catalog caching (localStorage) ----------
 // The whole catalog is fetched live from Google Sheets on every visit,
-// which can take several seconds — worse on mobile networks than on a
+// which can take several seconds - worse on mobile networks than on a
 // stable desktop connection. To make repeat visits feel instant, the raw
 // sheet rows are cached in localStorage and rendered immediately while a
 // fresh copy loads in the background; whatever the fresh fetch returns
 // then silently replaces the cached render and updates the cache for next
 // time. A first-ever visit with nothing cached still shows the normal
-// loading spinner exactly as before — this only speeds up repeat visits.
+// loading spinner exactly as before - this only speeds up repeat visits.
 const CATALOG_CACHE_KEY = "sneakix_catalog_cache_v1";
 
 function readCatalogCache(){
@@ -1847,7 +1913,7 @@ function writeCatalogCache(rawRows){
     if(rawRows.length === 0) return; // never let a failed/empty fetch overwrite a good cache
     localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ rawRows, cachedAt: Date.now() }));
   } catch(e){
-    // Storage full or unavailable — caching is a nice-to-have, safe to skip.
+    // Storage full or unavailable - caching is a nice-to-have, safe to skip.
   }
 }
 
@@ -1876,7 +1942,7 @@ function applyCatalogRows(rawRows, isLiveFetch){
   document.getElementById("grid").setAttribute("aria-busy", "false");
 
   if(itemDetailShoeId !== null){
-    // The item detail page is already open — almost certainly because the
+    // The item detail page is already open - almost certainly because the
     // instant cache render just opened it via a WhatsApp deep link. Refresh
     // its content in place with the fresh data instead of re-running hash
     // routing, which openItemDetail()'s own suppressHashRoute guard would
@@ -1901,7 +1967,7 @@ function reconcileCartWithCatalog(){
   let changed = false;
   cart = cart.filter(item => {
     const shoe = SHOES.find(s => s.id === item.shoeId);
-    if(!shoe){ changed = true; return false; } // discontinued — drop the line
+    if(!shoe){ changed = true; return false; } // discontinued - drop the line
     if(shoe.price !== item.price || shoe.marketPrice !== item.marketPrice || shoe.images[0] !== item.image || shoe.name !== item.name || shoe.brand !== item.brand){
       item.price = shoe.price;
       item.marketPrice = shoe.marketPrice;
@@ -1920,11 +1986,11 @@ function reconcileCartWithCatalog(){
 }
 
 // Deep-link routing used specifically during initial page load (cache pass
-// then live-fetch pass) — NOT the same as routeToShoeFromHash(), which
+// then live-fetch pass) - NOT the same as routeToShoeFromHash(), which
 // stays wired to the hashchange event for normal in-session navigation.
 // On the cache pass (isLiveFetch=false), a hash that doesn't match any
 // cached product is left alone rather than stripped, in case it's a
-// brand-new product the stale cache just doesn't know about yet — the
+// brand-new product the stale cache just doesn't know about yet - the
 // live fetch moments later gets the final say. Only the live-fetch pass
 // gives up and falls back to the homepage.
 function routeToShoeFromHashOnLoad(isLiveFetch){
@@ -1939,20 +2005,20 @@ function routeToShoeFromHashOnLoad(isLiveFetch){
     openItemDetail(shoe.id);
     document.documentElement.classList.remove("deep-link-pending");
   } else if(isLiveFetch){
-    // Genuinely doesn't exist even in fresh data — drop the hash and fall
+    // Genuinely doesn't exist even in fresh data - drop the hash and fall
     // back to a normal homepage instead of leaving the shopper stuck on
     // the "Opening product…" loader forever.
     history.replaceState(null, "", location.pathname + location.search);
     document.documentElement.classList.remove("deep-link-pending");
   }
-  // else: the cache pass came up empty — leave the hash and loader alone
+  // else: the cache pass came up empty - leave the hash and loader alone
   // and wait for the live fetch to make the final call.
 }
 
 function loadShoesFromSheet(){
   const cachedRows = readCatalogCache();
   if(cachedRows){
-    console.log(`[SNEAKIX] Rendered ${cachedRows.length} cached row(s) instantly — fetching a fresh copy in the background.`);
+    console.log(`[SNEAKIX] Rendered ${cachedRows.length} cached row(s) instantly - fetching a fresh copy in the background.`);
     applyCatalogRows(cachedRows, false);
   }
 
@@ -1962,7 +2028,7 @@ function loadShoesFromSheet(){
     complete: function(results){
       const rawRows = results.data.filter(r => Object.values(r).some(v => v && String(v).trim()));
 
-      // Diagnostics — check the browser console (F12) if the grid looks empty.
+      // Diagnostics - check the browser console (F12) if the grid looks empty.
       console.log(`[SNEAKIX] CSV columns detected:`, results.meta && results.meta.fields);
       console.log(`[SNEAKIX] Raw non-blank rows: ${rawRows.length}`);
 
@@ -1981,7 +2047,7 @@ function loadShoesFromSheet(){
     },
     error: function(err){
       // Only show the hard error state if there was nothing cached to fall
-      // back on — a failed background refresh shouldn't rip a working,
+      // back on - a failed background refresh shouldn't rip a working,
       // cache-rendered page out from under someone mid-browse.
       if(!cachedRows){
         const grid = document.getElementById("grid");
@@ -2003,10 +2069,10 @@ const SHIPPING_TIERS = {
 /* ============ App logic ============ */
 
 let activeFilter = "all";       // all | new | sale | under2000
-let activeGender = null;        // null | "M" | "W" — independent of category/type now that Gender is its own sheet column
-let activeCategory = "All";     // shoe TYPE filter (Shoes/Boots/Ballet/Loafers/Formals/Sandals) — no longer encodes gender
+let activeGender = null;        // null | "M" | "W" - independent of category/type now that Gender is its own sheet column
+let activeCategory = "All";     // shoe TYPE filter (Shoes/Boots/Ballet/Loafers/Formals/Sandals) - no longer encodes gender
 let activeType = "All";         // shoe type within a category, e.g. Sneakers | Sandals | Formal
-let activeAvailFilters = new Set(); // multi-select: 'cod' | 'return' — empty set = no availability filter applied
+let activeAvailFilters = new Set(); // multi-select: 'cod' | 'return' - empty set = no availability filter applied
 let activeQualities = new Set(); // multi-select: normalized quality keys ('7a'|'10a'|'ua'|'semiua')
 let activeBrands = new Set();   // multi-select: empty set = "All"
 let activeModels = new Set();   // multi-select: empty set = "All"
@@ -2017,7 +2083,7 @@ let activeSort = "latest"; // latest | price_low | price_high
 let searchTerm = "";
 
 // ---------- Cart persistence (localStorage) ----------
-// Without this, the cart lived only in a JS variable — a page refresh,
+// Without this, the cart lived only in a JS variable - a page refresh,
 // the OS killing a backgrounded mobile browser tab, or an accidental tab
 // close would silently wipe out everything a customer had added, with no
 // way to recover it. Cart is now saved after every change and restored on
@@ -2028,7 +2094,7 @@ function saveCartToStorage(){
   try {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
   } catch(e){
-    // Storage full or unavailable (private browsing, etc.) — cart still
+    // Storage full or unavailable (private browsing, etc.) - cart still
     // works for this session, it just won't survive a reload.
   }
 }
@@ -2052,6 +2118,7 @@ let selectedShipping = "free";
 const PAGE_SIZE = 12;
 let visibleCount = PAGE_SIZE;
 let preloadNextBatchTimer = null;
+let currentFullPage = null; // 'size-guide' | 'policies' | null - declared early since closeAllOverlays() (used throughout) reads it
 
 document.getElementById("hamburgerWaBtn").href = `https://wa.me/${WHATSAPP_NUMBER}`;
 document.getElementById("footerWhatsapp").href = `https://wa.me/${WHATSAPP_NUMBER}`;
@@ -2064,7 +2131,7 @@ window.addEventListener("scroll", () => {
   siteHeader.classList.toggle("scrolled", window.scrollY > 4);
 }, { passive: true });
 
-// The header is fixed and always visible — cart, hamburger menu, and the
+// The header is fixed and always visible - cart, hamburger menu, and the
 // logo stay on screen through every step (product page, cart, checkout,
 // filters, photo view). This measures its real rendered height (it can
 // vary slightly with font loading / safe-area insets) and feeds it to
@@ -2081,7 +2148,7 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncHeaderH
 // Body scroll lock, shared across every overlay type (cart, filters,
 // checkout, policy, size chart, item detail, lightbox, hamburger). Keyed
 // off whether ANY overlay is currently open rather than toggled
-// independently per overlay — so closing one overlay while another is
+// independently per overlay - so closing one overlay while another is
 // still open behind it (e.g. closing the lightbox while the item detail
 // page underneath is still open) doesn't incorrectly unlock the page and
 // let swipes/scrolls leak through to the background content.
@@ -2090,6 +2157,25 @@ function updateBodyScrollLock(){
     ".overlay.open, .lightbox.open, .hamburger-overlay.open, .item-detail-overlay.open"
   ) !== null;
   document.body.style.overflow = anyOpen ? "hidden" : "";
+}
+
+// While a full-page view (product detail, Size Chart, or Policies) is
+// open, the page content behind it needs to be excluded from text
+// selection, copy, and keyboard/screen-reader focus - otherwise a
+// "select all" or long-press-copy gesture can pull in background page
+// text along with what's actually visible on screen, and Tab/VoiceOver
+// can silently land on controls that are hidden underneath. `inert` is
+// the standard way to do this: it removes an element and everything
+// inside it from interaction/accessibility without touching layout, so
+// nothing changes visually. The header stays interactive on purpose -
+// its hamburger menu and hero-card links are meant to stay reachable
+// while these pages are open.
+const BACKGROUND_INERT_SELECTOR = ".skip-link, .deep-link-loader, .search-wrap, #genderHero, #catStrip, #filterStrip, #selectedFiltersRow, #grid, #showMoreWrap, .site-footer";
+function syncBackgroundInertState(){
+  const shouldBeInert = itemDetailShoeId !== null || currentFullPage !== null;
+  document.querySelectorAll(BACKGROUND_INERT_SELECTOR).forEach(el => {
+    el.inert = shouldBeInert;
+  });
 }
 
 function openHamburger(){
@@ -2102,7 +2188,7 @@ function closeHamburger(){
   updateBodyScrollLock();
 }
 
-// Category shortcuts inside the hamburger menu — built from whatever
+// Category shortcuts inside the hamburger menu - built from whatever
 // shoe types actually exist in the sheet right now (Shoes/Boots/Ballet/
 // Loafers/Formals/Sandals), same order as the cat-strip chips. Gender
 // has its own "Shop by Gender" section above instead of being mixed in
@@ -2271,13 +2357,17 @@ function initLightboxZoomHandlers(){
 }
 initLightboxZoomHandlers();
 
-// Escape closes whichever sheet is open — standard, expected modal behavior
+// Escape closes whichever sheet is open - standard, expected modal behavior
 window.addEventListener("keydown", (e) => {
   if(e.key === "Escape"){
     document.querySelectorAll(".overlay.open").forEach(o => o.classList.remove("open"));
     closeItemDetail();
     closeHamburger();
     closeLightbox();
+    // Size Guide / Policies are pushState-based pages, not plain sheets -
+    // go through history.back() so the URL and back-stack stay correct,
+    // same as if the person had tapped the in-page Back button.
+    if(currentFullPage) history.back();
     updateBodyScrollLock();
   }
   if(itemDetailShoeId !== null){
@@ -2297,30 +2387,39 @@ function parseSizes(sizes){
 // Brand-specific UK<->EU size conversion, exactly as provided by the store.
 // Different brands round differently (Nike's UK9=EU44 is not the same as
 // Adidas's UK9=EU43), so this is deliberately keyed by brand family rather
-// than one universal chart. Only the sizes explicitly given are used —
+// than one universal chart. Only the sizes explicitly given are used -
 // sizes not listed here are NOT guessed at, since an inaccurate size
 // shown at checkout could mean an order the store's own policy won't
 // let a customer exchange.
 const BRAND_SIZE_CHARTS = {
-  // Nike / Under Armour / Jordan / Brooks — updated per store's latest chart
+  // Nike / Under Armour / Jordan / Brooks - updated per store's latest chart
   nike:      [[3.5,36],[4,37],[5,38],[6,39],[6.5,40],[7,41],[7.5,42],[8.5,43],[9,44],[10,45],[11,46],[12,47]],
   "under armour":[[3.5,36],[4,37],[5,38],[6,39],[6.5,40],[7,41],[7.5,42],[8.5,43],[9,44],[10,45],[11,46],[12,47]],
   ua:        [[3.5,36],[4,37],[5,38],[6,39],[6.5,40],[7,41],[7.5,42],[8.5,43],[9,44],[10,45],[11,46],[12,47]],
   jordan:    [[3.5,36],[4,37],[5,38],[6,39],[6.5,40],[7,41],[7.5,42],[8.5,43],[9,44],[10,45],[11,46],[12,47]],
   brooks:    [[3.5,36],[4,37],[5,38],[6,39],[6.5,40],[7,41],[7.5,42],[8.5,43],[9,44],[10,45],[11,46],[12,47]],
-  // Adidas — left untouched per instructions (confirmed linear conversion,
+  // Adidas - left untouched per instructions (confirmed linear conversion,
   // UK = EU − 34, extended across the full EU 36-47 range)
   adidas:    [[2,36],[3,37],[4,38],[5,39],[6,40],[7,41],[8,42],[9,43],[10,44],[11,45],[12,46]],
-  // Puma / Reebok / New Balance / Hoka — updated per store's latest chart
+  // Puma / Reebok / New Balance / Hoka - updated per store's latest chart
   puma:      [[3.5,36],[4,37],[5,38],[5.5,39],[6.5,40],[7,41],[7.5,41.5],[8,42],[9,43],[9.5,44],[10,44.5],[10.5,45],[11,45.5],[11.5,46],[12,47]],
   reebok:    [[3.5,36],[4,37],[5,38],[5.5,39],[6.5,40],[7,41],[7.5,41.5],[8,42],[9,43],[9.5,44],[10,44.5],[10.5,45],[11,45.5],[11.5,46],[12,47]],
   "new balance":[[3.5,36],[4,37],[5,38],[5.5,39],[6.5,40],[7,41],[7.5,41.5],[8,42],[9,43],[9.5,44],[10,44.5],[10.5,45],[11,45.5],[11.5,46],[12,47]],
   nb:        [[3.5,36],[4,37],[5,38],[5.5,39],[6.5,40],[7,41],[7.5,41.5],[8,42],[9,43],[9.5,44],[10,44.5],[10.5,45],[11,45.5],[11.5,46],[12,47]],
   hoka:      [[3.5,36],[4,37],[5,38],[5.5,39],[6.5,40],[7,41],[7.5,41.5],[8,42],[9,43],[9.5,44],[10,44.5],[10.5,45],[11,45.5],[11.5,46],[12,47]],
-  // Converse — updated per store's latest chart
+  // Converse - updated per store's latest chart
   converse:  [[3.5,36],[4.5,37],[5.5,38],[6.5,39],[7,40],[7.5,41],[8.5,42],[9.5,43],[10.5,44],[11.5,45],[12,46]],
-  // Skechers — updated per store's latest chart
-  skechers:  [[3,36],[4,37],[5,38],[6,39],[6.5,40],[7,41],[7.5,42],[8.5,43],[9.5,44],[10.5,45],[11.5,46]]
+  // Skechers - updated per store's latest chart
+  skechers:  [[3,36],[4,37],[5,38],[6,39],[6.5,40],[7,41],[7.5,42],[8.5,43],[9.5,44],[10.5,45],[11.5,46]],
+  // Onitsuka Tiger / ASICS - added per brand's official chart (see
+  // ONITSUKA_ASICS_SIZE_CHART below for the full EU/UK/CM table shown in
+  // the Size Guide). Kept here too, in the same [UK, EU] pair shape as
+  // every other brand, purely so shoeMatchesSizeFilter() can also
+  // cross-match UK<->EU for these two brands - this doesn't touch any
+  // existing brand's entry above.
+  "onitsuka tiger":[[3,36],[3.5,37],[4.5,38],[5,39],[6,40],[7,41],[7.5,42],[8.5,43],[9,44],[10,45]],
+  onitsuka:  [[3,36],[3.5,37],[4.5,38],[5,39],[6,40],[7,41],[7.5,42],[8.5,43],[9,44],[10,45]],
+  asics:     [[3,36],[3.5,37],[4.5,38],[5,39],[6,40],[7,41],[7.5,42],[8.5,43],[9,44],[10,45]]
 };
 
 function brandSizeChart(brand){
@@ -2351,27 +2450,53 @@ const GENERAL_SIZE_CHART = [
   [45, "11", "29.0"]
 ];
 
+// Onitsuka Tiger / ASICS official chart - kept separate from
+// BRAND_SIZE_CHARTS/renderSizeChartContent's grouping logic above since
+// this is the only brand chart with a CM column, per the brand's own
+// published sizing (not derived/approximated like GENERAL_SIZE_CHART).
+const ONITSUKA_ASICS_SIZE_CHART = [
+  [36, 3,   22.5],
+  [37, 3.5, 23],
+  [38, 4.5, 24],
+  [39, 5,   24.5],
+  [40, 6,   25.25],
+  [41, 7,   26],
+  [42, 7.5, 26.5],
+  [43, 8.5, 27.5],
+  [44, 9,   28],
+  [45, 10,  28.5]
+];
+
 function renderSizeChartContent(){
   const container = document.getElementById("sizeChartContent");
   if(!container) return;
 
+  // "Default Size Chart" - this is the site's existing General Reference
+  // table (GENERAL_SIZE_CHART), data and logic completely unchanged from
+  // before; only its wrapper markup changed so it always stays visible
+  // above the collapsible brand accordion, per the Size Guide's default view.
   const generalRows = GENERAL_SIZE_CHART.map(([eu, uk, cm]) =>
     `<tr><td>${eu}</td><td>${uk}</td><td>${cm} cm</td></tr>`
   ).join("");
   const generalTable = `
-    <div class="size-chart-group">
-      <h4 class="size-chart-brands">General Reference</h4>
-      <p class="size-chart-sub">Use this if your brand isn't listed below, or to double-check by measuring your foot.</p>
-      <table class="size-chart-table">
-        <thead><tr><th>EU</th><th>UK</th><th>Foot Length</th></tr></thead>
-        <tbody>${generalRows}</tbody>
-      </table>
+    <div class="size-guide-default">
+      <h4 class="size-guide-default-label"><span aria-hidden="true">▾</span> Default Size Chart</h4>
+      <div class="size-chart-group">
+        <p class="size-chart-sub">Use this if your brand isn't listed below, or to double-check by measuring your foot.</p>
+        <div class="size-chart-table-wrap">
+          <table class="size-chart-table">
+            <thead><tr><th>EU</th><th>UK</th><th>Foot Length</th></tr></thead>
+            <tbody>${generalRows}</tbody>
+          </table>
+        </div>
+      </div>
     </div>
   `;
 
   // Group brands that share the exact same conversion table so we don't
-  // print the same numbers five times over — e.g. Nike/Jordan/Brooks all
-  // use one chart, so they appear together under one table.
+  // print the same numbers five times over - e.g. Nike/Jordan/Brooks all
+  // use one chart, so they appear together under one table. Unchanged
+  // from before - still reads directly from BRAND_SIZE_CHARTS.
   const groups = {};
   Object.entries(BRAND_SIZE_CHARTS).forEach(([brand, chart]) => {
     if(!BRAND_DISPLAY_NAMES[brand]) return; // skip shorthand duplicates
@@ -2383,36 +2508,110 @@ function renderSizeChartContent(){
   const euRange = [];
   for(let eu = 36; eu <= 47; eu++) euRange.push(eu);
 
-  container.innerHTML = generalTable + Object.values(groups).map(group => {
-    // Only whole-EU-size points from the given data land in this grid;
-    // any half-EU point (e.g. 41.5) doesn't correspond to a row here.
+  // Each brand group now renders as a collapsed-by-default accordion
+  // section (reusing the filter panel's .filter-accordion-* look) instead
+  // of a permanently-visible table, with toggleSizeGuideBrand() below
+  // keeping only one section open at a time.
+  const accordionSections = Object.values(groups).map((group, i) => {
     const euToUk = {};
     group.chart.forEach(([uk, eu]) => { if(Number.isInteger(eu)) euToUk[eu] = uk; });
 
-    const rows = euRange.map(eu => {
-      const uk = euToUk[eu];
-      return `<tr><td>${eu}</td><td>${uk !== undefined ? uk : '-'}</td></tr>`;
-    }).join("");
+    const rows = euRange
+      .filter(eu => euToUk[eu] !== undefined)
+      .map(eu => `<tr><td>${eu}</td><td>${euToUk[eu]}</td></tr>`)
+      .join("");
 
+    const key = `brand-${i}`;
     return `
-      <div class="size-chart-group">
-        <h4 class="size-chart-brands">${group.brands.join(" / ")}</h4>
-        <table class="size-chart-table">
-          <thead><tr><th>EU</th><th>UK</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
+      <div class="filter-accordion-item" id="sizeGuideAccordion-${key}">
+        <button class="filter-accordion-header" onclick="toggleSizeGuideBrand('${key}')" aria-expanded="false">
+          <h3>${group.brands.join(" / ")}</h3>
+          <span class="chevron" aria-hidden="true">▸</span>
+        </button>
+        <div class="filter-accordion-body">
+          <div class="filter-accordion-body-inner">
+            <div class="filter-accordion-content">
+              <div class="size-chart-table-wrap">
+                <table class="size-chart-table">
+                  <thead><tr><th>EU</th><th>UK</th></tr></thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     `;
-  }).join("") + `<p class="size-chart-note">Please place your order using the size format shown on the product (UK or EU). Please send your order in EU size for quicker and more accurate processing.</p>`;
+  });
+
+  // Onitsuka Tiger / ASICS - the newly-added chart. Kept as its own
+  // accordion section (not folded into the grouping loop above) since
+  // it's the only brand with a CM column, using ONITSUKA_ASICS_SIZE_CHART
+  // directly rather than BRAND_SIZE_CHARTS' [UK, EU]-only shape.
+  const onitsukaRows = ONITSUKA_ASICS_SIZE_CHART.map(([eu, uk, cm]) =>
+    `<tr><td>${eu}</td><td>${uk}</td><td>${cm}</td></tr>`
+  ).join("");
+  accordionSections.push(`
+    <div class="filter-accordion-item" id="sizeGuideAccordion-onitsuka">
+      <button class="filter-accordion-header" onclick="toggleSizeGuideBrand('onitsuka')" aria-expanded="false">
+        <h3>Onitsuka Tiger / ASICS</h3>
+        <span class="chevron" aria-hidden="true">▸</span>
+      </button>
+      <div class="filter-accordion-body">
+        <div class="filter-accordion-body-inner">
+          <div class="filter-accordion-content">
+            <div class="size-chart-table-wrap">
+              <table class="size-chart-table">
+                <thead><tr><th>EU</th><th>UK</th><th>CM</th></tr></thead>
+                <tbody>${onitsukaRows}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `);
+
+  container.innerHTML = generalTable +
+    `<div class="size-guide-accordion">${accordionSections.join("")}</div>` +
+    `<p class="size-chart-note">Please place your order using the size format shown on the product (UK or EU). Please send your order in EU size for quicker and more accurate processing.</p>`;
+
+  openSizeGuideBrand = null; // every fresh render starts with all brand sections collapsed
 }
 
-function openSizeChart(){
-  renderSizeChartContent();
-  openSheetById("sizeChartOverlay");
+// Keeps only one brand-specific chart expanded at a time - opening a new
+// one collapses whichever was previously open. Independent of the filter
+// panel's own accordion (toggleFilterSection), which intentionally allows
+// several sections open at once for a different reason (filtering).
+let openSizeGuideBrand = null;
+function toggleSizeGuideBrand(key){
+  const nowOpening = openSizeGuideBrand !== key;
+
+  if(openSizeGuideBrand){
+    const prev = document.getElementById(`sizeGuideAccordion-${openSizeGuideBrand}`);
+    if(prev){
+      prev.classList.remove("open");
+      const prevHeader = prev.querySelector(".filter-accordion-header");
+      if(prevHeader) prevHeader.setAttribute("aria-expanded", "false");
+    }
+  }
+
+  if(nowOpening){
+    const item = document.getElementById(`sizeGuideAccordion-${key}`);
+    if(item){
+      item.classList.add("open");
+      const header = item.querySelector(".filter-accordion-header");
+      if(header) header.setAttribute("aria-expanded", "true");
+    }
+    openSizeGuideBrand = key;
+  } else {
+    openSizeGuideBrand = null;
+  }
 }
+
 
 // Recognized shoe models, matched against the product's Name from the
-// sheet. The brand listed here is for reference only — filtering still
+// sheet. The brand listed here is for reference only - filtering still
 // checks each shoe's own Brand column separately, so a model and a brand
 // filter can be combined (or can conflict, which correctly yields zero
 // results if a product is tagged with a mismatched brand).
@@ -2458,9 +2657,9 @@ const KNOWN_MODELS = [
 // Returns the rounded discount % ONLY when the sheet's "Sale" column is
 // TRUE for this product AND marketPrice is a valid number strictly
 // greater than the actual selling price. A Market Price on its own does
-// NOT trigger a discount — Sale must be explicitly checked. Otherwise
+// NOT trigger a discount - Sale must be explicitly checked. Otherwise
 // returns null (no strikethrough, no badge). There is no manual discount
-// % field anywhere — it's always derived here from this single function,
+// % field anywhere - it's always derived here from this single function,
 // so every place that shows a price stays in sync automatically.
 function shoeDiscountPercent(shoe){
   if(!shoe.isSale) return null;
@@ -2472,7 +2671,7 @@ function shoeDiscountPercent(shoe){
 // Quality now comes from its own sheet column (not from Description tags
 // anymore). Only these four values are recognized, matched loosely
 // (case-insensitive, ignoring spaces/hyphens so "Semi UA", "Semi-UA" and
-// "SemiUA" all count as the same thing) — anything else in the column is
+// "SemiUA" all count as the same thing) - anything else in the column is
 // ignored, no quality line/filter match at all.
 const QUALITY_OPTIONS = [
   { key: "7a", filterLabel: "7A", descLine: "7A Quality." },
@@ -2495,21 +2694,21 @@ function qualityLabel(rawQuality){
 // "Brand Box/Suede Leather/Kerala" rather than a full sentence.
 // This turns those tags into short display sentences:
 //   - a "Kerala" tag (exact match, case-insensitive) becomes its own line:
-//     "2-4 Days Delivery in Kerala." — the word "Kerala" itself is never
+//     "2-4 Days Delivery in Kerala." - the word "Kerala" itself is never
 //     shown, it's purely a trigger.
 //   - tags matching a KNOWN_ACCESSORIES entry below (Brand Box, Dust Bag,
-//     Extra Laces, etc. — physical things that come in the box) all fold
+//     Extra Laces, etc. - physical things that come in the box) all fold
 //     into one "Comes with ..." sentence, Title Cased and normalized
 //     (so "dustbag"/"Dust bag"/"DUSTBAG" all become "Dust Bag").
 //   - every OTHER tag (materials, quality notes, style descriptors, or
-//     anything not on the known list — e.g. "Made in USA", "Suede
+//     anything not on the known list - e.g. "Made in USA", "Suede
 //     Leather", "Cubon heel", "crocs buttons (4 pcs) extra 50") becomes
 //     its own standalone sentence, shown exactly as typed except the
-//     first letter is forced capital — this deliberately does NOT
+//     first letter is forced capital - this deliberately does NOT
 //     lowercase or rewrite the rest, so acronyms like "USA" are never
 //     mangled and new phrases never need a code change to be recognized.
 //   - a blank cell falls back to "Standard packaging."
-// Returns an array of plain-text lines (already trimmed, not yet escaped —
+// Returns an array of plain-text lines (already trimmed, not yet escaped -
 // callers must still run each line through escapeHtml before inserting).
 const KNOWN_ACCESSORIES = {
   "brand box": "Brand Box",
@@ -2568,7 +2767,7 @@ function buildDescriptionLines(rawDescription){
     if(accessory){
       accessories.push(accessory);
     } else {
-      // Not a recognized accessory — show verbatim as its own sentence,
+      // Not a recognized accessory - show verbatim as its own sentence,
       // only forcing the first letter capital (never touching the rest,
       // so "Made in USA" stays "Made in USA", not "Made in usa").
       const capitalized = tag.charAt(0).toUpperCase() + tag.slice(1);
@@ -2598,7 +2797,7 @@ function buildDescriptionLines(rawDescription){
 // inserted via innerHTML. Otherwise a sheet cell containing something like
 // <img src=x onerror=...> would be parsed as real HTML/JS by the browser
 // instead of displayed as plain text. This does NOT affect how normal
-// product text looks — it only neutralizes '<', '>', '&', quotes.
+// product text looks - it only neutralizes '<', '>', '&', quotes.
 function escapeHtml(str){
   return String(str ?? "").replace(/[&<>"']/g, c => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -2615,7 +2814,7 @@ function detectModel(shoeName){
 
 
 // Brand-aware size filter matching: a shoe matches a selected filter size
-// either directly, or — for brands with a known chart — via that brand's
+// either directly, or - for brands with a known chart - via that brand's
 // real UK<->EU equivalent. So filtering "UK 10" also surfaces a Nike shoe
 // listed as EU 45, without assuming every brand converts the same way.
 function shoeMatchesSizeFilter(shoe, filterSize){
@@ -2640,7 +2839,7 @@ function shoeMatchesSizeFilter(shoe, filterSize){
 function renderFilterStrip(){
   const strip = document.getElementById("filterStrip");
 
-  // "All" is intentionally not a pill here — the "All" chip already in the
+  // "All" is intentionally not a pill here - the "All" chip already in the
   // category row above does the exact same thing. "Under ₹2000",
   // "Premium Shoes", "New Arrivals" and "Sale" all moved exclusively to
   // the homepage hero cards / the hamburger menu, so none of them are
@@ -2648,10 +2847,10 @@ function renderFilterStrip(){
   const filters = [];
 
   // Sort and Filters as two full-size, clearly visible buttons (not a
-  // small easy-to-miss pill) — both open the same filter sheet; Sort's
+  // small easy-to-miss pill) - both open the same filter sheet; Sort's
   // label always reflects the current sort choice. This is a *second*
   // entry point to the filter sheet in addition to the "Filters" button
-  // already at the very top next to search — that one is untouched.
+  // already at the very top next to search - that one is untouched.
   const rowHtml = () => `
     <button class="strip-btn sort-strip-btn" onclick="openSheetById('sortOverlay')" aria-label="Open sort options, currently ${SORT_LABELS[activeSort]}">
       <span class="strip-btn-top"><span aria-hidden="true">⇅</span> Sort <span class="chevron-mini" aria-hidden="true">▾</span></span>
@@ -2669,7 +2868,7 @@ function renderFilterStrip(){
   // If the currently active filter's pill no longer exists (e.g. the last
   // sale item was removed from the sheet), fall back to "All" so the grid
   // doesn't stay stuck showing zero results for a filter that vanished.
-  // (Under ₹2000/Premium/New Arrivals/Sale are exempt — they're only
+  // (Under ₹2000/Premium/New Arrivals/Sale are exempt - they're only
   // ever set via the hero cards / hamburger menu, not this pill row.)
   const HERO_ONLY_FILTERS = ["under2000", "premium3000", "new", "sale"];
   if(activeFilter !== "all" && !HERO_ONLY_FILTERS.includes(activeFilter) && !filters.some(([key]) => key === activeFilter)){
@@ -2678,7 +2877,7 @@ function renderFilterStrip(){
   }
 }
 
-// QUICK_FILTER_LABELS covers every possible activeFilter value — including
+// QUICK_FILTER_LABELS covers every possible activeFilter value - including
 // "under2000"/"premium3000", which no longer have a pill of their own here
 // but still need a human-readable label for the removable chip in the
 // selected-filters row (see renderSelectedFilters).
@@ -2695,7 +2894,7 @@ function setFilter(key){
 // Dedicated entry point for the "Under ₹2000"/"Premium Shoes" hero cards
 // and hamburger links. Unlike the plain setFilter() above (used by the
 // lighter-touch New Arrivals/Sale pills), this resets gender/type/brand/
-// model/size back to defaults too — consistent with how the Men's/
+// model/size back to defaults too - consistent with how the Men's/
 // Women's hero cards behave, since this is also a "homepage entry point"
 // action rather than a quick in-page toggle.
 function selectPriceTierHero(key){
@@ -2709,8 +2908,8 @@ function selectPriceTierHero(key){
   document.getElementById("grid").scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
-// New Arrivals/Sale only show — as hero cards AND in the hamburger menu
-// — when at least one product is actually flagged that way right now;
+// New Arrivals/Sale only show - as hero cards AND in the hamburger menu
+// - when at least one product is actually flagged that way right now;
 // otherwise they'd be a dead link to an empty grid. Whichever hamburger
 // button ends up last and visible gets the "no-border" class so the bold
 // divider below it doesn't end up doubled with a regular hairline,
@@ -2747,7 +2946,7 @@ function escForInlineJs(str){
 }
 
 // Category is now a pure shoe TYPE from the sheet (Shoes/Boots/Ballet/
-// Loafers/Formals/Sandals) — gender no longer lives inside this text at
+// Loafers/Formals/Sandals) - gender no longer lives inside this text at
 // all, it comes from the separate Gender column. Comparison is
 // case/whitespace-insensitive so small sheet inconsistencies ("ballet"
 // vs "Ballet") still match the chip.
@@ -2769,7 +2968,7 @@ function categoryType(cat){
 }
 
 // A shoe matches a gender filter if it's explicitly tagged for that
-// gender, or tagged "MW" (Men's & Women's — shown under both).
+// gender, or tagged "MW" (Men's & Women's - shown under both).
 function shoeMatchesGender(shoe, g){
   return shoe.gender === "MW" || shoe.gender === g;
 }
@@ -2789,7 +2988,7 @@ function renderCategories(){
 }
 
 // The four homepage hero cards (Men's/Women's Footwear, Under ₹2000,
-// Premium Shoes) are only shown on the true, unfiltered homepage state —
+// Premium Shoes) are only shown on the true, unfiltered homepage state -
 // once a gender OR a quick filter is active, they'd just be duplicating
 // the exit-chip already showing above the grid, so they're hidden to
 // keep the page focused on the product grid.
@@ -2828,7 +3027,7 @@ function selectGenderCategory(gender){
 }
 
 // Drops back to the unisex "All" view without touching type/brand/size
-// filters — the exit action on the "Men's/Women's Footwear" chip.
+// filters - the exit action on the "Men's/Women's Footwear" chip.
 function clearGenderFilter(){
   activeGender = null;
   visibleCount = PAGE_SIZE;
@@ -2897,7 +3096,7 @@ function removeQualityFilter(key){ activeQualities.delete(key); visibleCount = P
 
 // ---------- Filter panel: collapsible accordion sections ----------
 // All sections start collapsed (just headings visible) per the compact,
-// mobile-friendly panel design — each expands independently on tap.
+// mobile-friendly panel design - each expands independently on tap.
 let openFilterSections = new Set();
 function toggleFilterSection(key){
   const item = document.getElementById(`filterAccordion-${key}`);
@@ -2985,7 +3184,7 @@ function clearAllFilters(){
 
 // Clicking the SNEAKIX logo/name in the header takes the shopper back to
 // the default homepage view, the same way a logo click works on most
-// sites — and it works from ANY page or open overlay: cart, the
+// sites - and it works from ANY page or open overlay: cart, the
 // checkout/address form, Our Policy, the size chart, the filter sheet,
 // the photo lightbox, or the hamburger menu. It closes whichever of
 // those happen to be open, clears the search box, resets every filter
@@ -2994,7 +3193,7 @@ function clearAllFilters(){
 // #shoe-... URL hash if present, and scrolls back to the top.
 // Any sheet/overlay (Size Chart, Policy, Cart, Checkout, Filters, Sort,
 // the full-screen lightbox, item detail, or the hamburger menu) needs to
-// be closed before jumping to a different view — otherwise it's left
+// be closed before jumping to a different view - otherwise it's left
 // sitting open, visually stacked on top of whatever the navigation just
 // changed underneath it.
 function closeAllOverlays(){
@@ -3003,10 +3202,25 @@ function closeAllOverlays(){
   closeLightbox();
   closeSheet("cartOverlay");
   closeSheet("checkoutOverlay");
-  closeSheet("policyOverlay");
-  closeSheet("sizeChartOverlay");
   closeSheet("filterOverlay");
   closeSheet("sortOverlay");
+  // Size Guide / Policies are now dedicated full pages (pushState-based),
+  // not simple .overlay sheets, so they're closed separately - and only
+  // the DOM/state is reset here, not the URL, since navigation functions
+  // that call closeAllOverlays() (goHome, setGender, etc.) set their own
+  // hash right after this runs anyway.
+  if(currentFullPage){
+    document.getElementById("sizeGuidePage")?.classList.remove("open");
+    document.getElementById("policiesPage")?.classList.remove("open");
+    currentFullPage = null;
+    updateBodyScrollLock(); // must re-check AFTER removing "open" above, or body stays scroll-locked
+    syncBackgroundInertState();
+    // Keep the URL honest - otherwise refreshing here would re-open Size
+    // Guide/Policies instead of showing whatever this navigation landed on.
+    if(location.hash === "#size-guide" || location.hash === "#policies"){
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  }
 }
 
 function goHome(){
@@ -3108,8 +3322,8 @@ function renderFilterSheet(){
     return `<button class="filter-chip ${active?'active':''}" onclick="setBrand('${escForInlineJs(b)}')">${escapeHtml(b)}</button>`;
   }).join("");
 
-  // Only show models actually present in the current catalog — not the
-  // full recognized list — so the row doesn't fill with irrelevant chips
+  // Only show models actually present in the current catalog - not the
+  // full recognized list - so the row doesn't fill with irrelevant chips
   // for models this store doesn't currently stock.
   const modelsFound = [...new Set(SHOES.map(s=>detectModel(s.name)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const models = ["All", ...modelsFound];
@@ -3140,7 +3354,7 @@ function renderFilterSheet(){
   const secondaryLabelEl = document.getElementById("filterSizeLabelSecondary");
   if(secondaryLabelEl) secondaryLabelEl.textContent = sizeRanges.secondaryLabel;
 
-  // Quality filter chips — only shown for quality values that actually
+  // Quality filter chips - only shown for quality values that actually
   // appear on at least one product in the catalog (loosely matched, so
   // "Semi UA" and "Semi-UA" both count toward the same "Semi-UA" chip).
   const presentQualities = new Set(SHOES.map(s => normalizeQuality(s.quality)).filter(Boolean));
@@ -3159,7 +3373,7 @@ function renderFilterSheet(){
   }
 
   // Availability filters (COD / Return) sit at the very bottom of the
-  // panel and are conditionally shown — only when at least one product
+  // panel and are conditionally shown - only when at least one product
   // in the catalog actually has that value set to TRUE.
   const anyCod = SHOES.some(s => s.codAvailable);
   const anyReturn = SHOES.some(s => s.returnAvailable);
@@ -3184,7 +3398,7 @@ function renderFilterSheet(){
 function getFilteredShoes(){
   return SHOES.filter(shoe=>{
     // The search bar always respects whatever category/filters are
-    // currently active — it narrows the already-filtered set rather than
+    // currently active - it narrows the already-filtered set rather than
     // replacing it. In the "All" category there's no category restriction
     // to begin with, so a search there naturally covers the whole catalog;
     // inside Men's/Women's/any other filter, search stays scoped to it.
@@ -3238,7 +3452,7 @@ function showMoreItems(){
   renderGrid();
 }
 
-// Warms the browser's cache for the *next* "Show More" batch — so when the
+// Warms the browser's cache for the *next* "Show More" batch - so when the
 // customer actually clicks the button, those images are already downloaded
 // and appear instantly instead of triggering a fresh lazy-load. Skips
 // entirely if the browser has Data Saver on, or reports a slow connection,
@@ -3267,7 +3481,7 @@ function preloadNextBatchImages(fullList, count){
 }
 
 // Fired on pointerdown (finger-down / mouse-down) on a product card or cart
-// line — earlier than the click itself completes — so a product's 2nd,
+// line - earlier than the click itself completes - so a product's 2nd,
 // 3rd, etc. photos are already in flight by the time its detail page
 // opens, instead of only starting once the thumbnail strip is rendered.
 // images[0] is skipped since it's already loaded as the card/cart thumbnail.
@@ -3297,7 +3511,7 @@ function renderGrid(){
   const list = fullList.slice(0, visibleCount);
 
   // First 10 cards load their image immediately (not gated behind native
-  // lazy-loading's scroll-into-view trigger) — mainly so a customer
+  // lazy-loading's scroll-into-view trigger) - mainly so a customer
   // scrolling fast right after page load doesn't hit a flash of empty
   // image boxes a couple rows past the fold. Everything from the 11th
   // card on stays loading="lazy" as before.
@@ -3340,7 +3554,7 @@ function renderGrid(){
 
   // Debounced so rapid actions (typing in search, tapping filters) don't
   // fire off a burst of preloads for batches that get discarded a moment
-  // later — only the settled, final "next batch" actually gets fetched.
+  // later - only the settled, final "next batch" actually gets fetched.
   clearTimeout(preloadNextBatchTimer);
   preloadNextBatchTimer = setTimeout(() => {
     preloadNextBatchImages(fullList, visibleCount);
@@ -3355,7 +3569,7 @@ let itemDetailPhotoIndex = 0;
 let suppressHashRoute = false;
 
 // Opens the exact product a #shoe-<id> URL points to, directly via the
-// full detail overlay — not by scrolling to an in-grid anchor, which can
+// full detail overlay - not by scrolling to an in-grid anchor, which can
 // silently fail to exist if that product is filtered out, paginated
 // beyond the current "Show More" position, or sorted elsewhere. This is
 // what makes a shared/WhatsApp product link reliably open the correct
@@ -3372,7 +3586,7 @@ function routeToShoeFromHash(){
   if(shoe){
     openItemDetail(shoe.id);
   } else {
-    // The linked product no longer exists (removed from the sheet) —
+    // The linked product no longer exists (removed from the sheet) -
     // drop the hash and fall back to a normal homepage rather than
     // leaving the shopper stuck on the "Opening product…" loader forever.
     history.replaceState(null, "", location.pathname + location.search);
@@ -3381,8 +3595,96 @@ function routeToShoeFromHash(){
 }
 window.addEventListener("hashchange", routeToShoeFromHash);
 
+// ---------- Size Guide / Policies: full-page navigation ----------
+// Unlike product detail (which uses history.replaceState - no back-stack
+// entry, since a product page is meant to just BE the current URL), these
+// two pages are genuinely navigated *to*, so they use pushState and rely
+// on popstate to close again - this is what makes the real browser/device
+// back button work here, not just the in-page "← Back" button.
+// (currentFullPage itself is declared earlier, near the other top-level
+// state, since closeAllOverlays() reads it and is called from many places.)
+
+function openSizeGuidePage(){
+  renderSizeChartContent();
+  showFullPage("size-guide", "sizeGuidePage", "#size-guide");
+}
+
+function openPoliciesPage(){
+  showFullPage("policies", "policiesPage", "#policies");
+}
+
+function showFullPage(pageKey, elId, hash){
+  closeAllOverlays(); // closes hamburger/cart/etc.; does not touch currentFullPage
+  document.getElementById("sizeGuidePage")?.classList.remove("open");
+  document.getElementById("policiesPage")?.classList.remove("open");
+  document.getElementById(elId)?.classList.add("open");
+  updateBodyScrollLock();
+  document.getElementById(elId)?.scrollTo?.(0, 0);
+  const scrollArea = document.querySelector(`#${elId} .item-detail-scroll`);
+  if(scrollArea) scrollArea.scrollTop = 0;
+
+  // Hopping directly from one full page to the other (e.g. via the
+  // hamburger menu, without hitting Back first) replaces the current
+  // history entry instead of stacking a new one - otherwise Back could
+  // land on an orphaned intermediate state instead of the real store page.
+  if(currentFullPage){
+    history.replaceState({ fullPage: pageKey }, "", hash);
+  } else {
+    history.pushState({ fullPage: pageKey }, "", hash);
+  }
+  currentFullPage = pageKey;
+  syncBackgroundInertState();
+}
+
+function closeCurrentFullPage(){
+  document.getElementById("sizeGuidePage")?.classList.remove("open");
+  document.getElementById("policiesPage")?.classList.remove("open");
+  currentFullPage = null;
+  updateBodyScrollLock();
+  syncBackgroundInertState();
+}
+
+window.addEventListener("popstate", () => {
+  const hash = location.hash;
+  if(hash === "#size-guide"){
+    if(currentFullPage !== "size-guide"){
+      renderSizeChartContent();
+      document.getElementById("sizeGuidePage")?.classList.add("open");
+      document.getElementById("policiesPage")?.classList.remove("open");
+      currentFullPage = "size-guide";
+      updateBodyScrollLock();
+      syncBackgroundInertState();
+    }
+  } else if(hash === "#policies"){
+    if(currentFullPage !== "policies"){
+      document.getElementById("policiesPage")?.classList.add("open");
+      document.getElementById("sizeGuidePage")?.classList.remove("open");
+      currentFullPage = "policies";
+      updateBodyScrollLock();
+      syncBackgroundInertState();
+    }
+  } else if(currentFullPage){
+    closeCurrentFullPage();
+  }
+});
+
+// Direct load / refresh / share link support - e.g. #size-guide bookmarked
+// or sent to someone, same spirit as the existing #shoe-<id> deep links.
+if(location.hash === "#size-guide"){
+  renderSizeChartContent();
+  document.getElementById("sizeGuidePage")?.classList.add("open");
+  currentFullPage = "size-guide";
+  updateBodyScrollLock();
+  syncBackgroundInertState();
+} else if(location.hash === "#policies"){
+  document.getElementById("policiesPage")?.classList.add("open");
+  currentFullPage = "policies";
+  updateBodyScrollLock();
+  syncBackgroundInertState();
+}
+
 // Clicking a product inside the Cart opens its Item Description Page the
-// same way a grid card click does — we just close the cart drawer first
+// same way a grid card click does - we just close the cart drawer first
 // so the detail overlay isn't opening underneath it.
 function openCartItemDetail(shoeId){
   closeSheet("cartOverlay");
@@ -3397,6 +3699,7 @@ function openItemDetail(shoeId){
   renderItemDetail();
   document.getElementById("itemDetailOverlay").classList.add("open");
   updateBodyScrollLock();
+  syncBackgroundInertState();
   trackEvent('view_item', { item_id: shoe.id, item_name: shoe.name, item_brand: shoe.brand, price: shoe.price });
   // Keep the URL in sync so this exact product can always be re-opened
   // (bookmarked, shared, or reached via a WhatsApp order link) straight
@@ -3410,6 +3713,7 @@ function closeItemDetail(){
   if(el) el.classList.remove("open");
   updateBodyScrollLock();
   itemDetailShoeId = null;
+  syncBackgroundInertState();
   suppressHashRoute = true;
   history.replaceState(null, "", location.pathname + location.search);
 }
@@ -3516,7 +3820,7 @@ function renderItemDetail(){
       <div class="item-detail-desc-links">
         <a href="https://wa.me/${WHATSAPP_NUMBER}" target="_blank" rel="noopener">Contact Us</a>
         <span class="item-detail-desc-links-sep">·</span>
-        <a href="#" onclick="event.preventDefault(); closeItemDetail(); openSheetById('policyOverlay');">Terms &amp; Policy</a>
+        <a href="#" onclick="event.preventDefault(); closeItemDetail(); openPoliciesPage();">Terms &amp; Policy</a>
       </div>
     </div>
   `;
@@ -3537,7 +3841,7 @@ document.getElementById("itemDetailOverlay")?.addEventListener("touchend", (e) =
 function selectSize(shoeId, size){ selections[shoeId] = size; renderItemDetail(); }
 
 // Quantity is capped at 1-10: 1 as a sensible floor (there's always at
-// least one pair), 10 as a sanity ceiling against accidental mis-taps —
+// least one pair), 10 as a sanity ceiling against accidental mis-taps -
 // a genuinely bulk order can still be arranged directly over WhatsApp.
 function changeQuantity(shoeId, delta){
   const current = quantities[shoeId] || 1;
@@ -3568,7 +3872,7 @@ function addToCart(shoeId){
 
   const price = shoe.price;
   const marketPrice = shoeDiscountPercent(shoe) !== null ? shoe.marketPrice : null;
-  // Send a direct link to the product's own page on the live site — the
+  // Send a direct link to the product's own page on the live site - the
   // same #shoe-<id> deep link openItemDetail() writes to the URL bar when
   // the page is open, so tapping it in WhatsApp opens the exact product
   // (all photos, price, sizes) rather than just one flat image. Requires
@@ -3600,12 +3904,25 @@ function addToCart(shoeId){
     setTimeout(()=>{ btn.textContent="Add to Cart"; btn.classList.remove("added"); btn.disabled = false; }, 2200);
   }
 
-  // Surface a direct path to checkout right away — without this, customers
+  // Surface a direct path to checkout right away - without this, customers
   // were tapping Add to Cart and then had to go hunt for the small cart
   // icon in the header themselves. Stays visible (not just a brief toast)
   // since the customer may still want to keep browsing sizes/colors first.
-  const postAdd = document.getElementById(`postAdd-${shoeId}`);
-  if(postAdd) postAdd.classList.add("show");
+  syncItemDetailCartState();
+}
+
+// Keeps the item-detail page's "View Cart" prompt in sync with the actual
+// cart contents, regardless of *how* the cart changed - a fresh Add to
+// Cart tap, a removal from the cart sheet, or checkout clearing the cart
+// entirely. Reads the live `cart` array fresh every time rather than any
+// cached/stale flag, and only touches the DOM if that shoe's detail view
+// is the one currently open (itemDetailShoeId) - a no-op otherwise.
+function syncItemDetailCartState(){
+  if(itemDetailShoeId === null) return;
+  const postAdd = document.getElementById(`postAdd-${itemDetailShoeId}`);
+  if(!postAdd) return;
+  const inCart = cart.some(item => item.shoeId === itemDetailShoeId);
+  postAdd.classList.toggle("show", inCart);
 }
 
 function updateCartCount(){
@@ -3613,7 +3930,7 @@ function updateCartCount(){
   const el = document.getElementById("cartCount");
   const icon = document.getElementById("cartIcon");
   // Reflects total pairs ordered (summing quantity per line), not just the
-  // number of distinct product lines — so adding one shoe with Qty 3
+  // number of distinct product lines - so adding one shoe with Qty 3
   // correctly shows "3" on the cart icon, not "1".
   el.textContent = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
   el.classList.remove("bump");
@@ -3704,7 +4021,17 @@ function renderTotals(){
   document.getElementById("sumTotal").textContent = tier.cost === null ? `₹${base} + COD charge` : `₹${base + tier.cost}`;
 }
 
-function removeFromCart(idx){ cart.splice(idx,1); updateCartCount(); renderCartLines(); }
+function removeFromCart(idx){
+  const removed = cart[idx];
+  cart.splice(idx,1);
+  updateCartCount();
+  renderCartLines();
+  // If the item just removed is the one currently shown on the item-detail
+  // page (e.g. it was opened from a cart line), its "View Cart" prompt
+  // needs to flip back to just "Add to Cart" immediately - this is the fix
+  // for it staying stuck on "View Cart" after removal.
+  if(removed) syncItemDetailCartState();
+}
 function closeSheet(id){ document.getElementById(id).classList.remove("open"); updateBodyScrollLock(); }
 
 function openCheckout(){
@@ -3773,7 +4100,7 @@ function submitOrder(e){
 
   // Deliberately NOT clearing the cart here. window.open() gives no way to
   // confirm WhatsApp actually opened (popup blocked, no WhatsApp installed,
-  // deep link silently failing on some browsers) — if it did fail, the
+  // deep link silently failing on some browsers) - if it did fail, the
   // cart needs to still be there for the "Didn't open? Tap here" retry
   // link above, and for the customer to just find their items still in
   // the cart if they come back later instead of having lost the order.
@@ -3791,6 +4118,7 @@ function continueShopping(){
   // that they're done with this order, it's safe to clear the cart.
   cart = [];
   updateCartCount();
+  syncItemDetailCartState();
 }
 
 // PapaParse now loads with `defer`, so it isn't guaranteed to be available
@@ -3801,7 +4129,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadShoesFromSheet();
 
   // Re-check the sheet periodically so filter categories, brands, and new
-  // products stay in sync for anyone who leaves the site open — without
+  // products stay in sync for anyone who leaves the site open - without
   // needing a full page reload. Paused while the tab is in the background.
   const SHEET_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
   setInterval(() => {
@@ -3809,6 +4137,25 @@ document.addEventListener("DOMContentLoaded", () => {
       loadShoesFromSheet();
     }
   }, SHEET_REFRESH_MS);
+});
+
+// Mobile browsers (and some desktop ones) often restore a page from the
+// "back-forward cache" on browser/device Back instead of re-running any of
+// this file's own startup code - the DOM just resumes exactly as it was
+// frozen, including any cart-state UI that's gone stale in the meantime
+// (e.g. a product's "View Cart" prompt still showing after that item was
+// removed from the cart via the cart sheet, then Back was pressed).
+// event.persisted === true is the standard signal that this is a bfcache
+// restore rather than a normal fresh load, so only resync in that case -
+// on a genuine fresh load `cart` itself is already loaded correctly from
+// storage, and there's nothing here yet to refresh anyway.
+window.addEventListener("pageshow", (event) => {
+  if(event.persisted){
+    syncItemDetailCartState();
+    updateCartCount();
+    const cartOverlayEl = document.getElementById("cartOverlay");
+    if(cartOverlayEl && cartOverlayEl.classList.contains("open")) renderCartLines();
+  }
 });
 </script>
 
