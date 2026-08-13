@@ -86,8 +86,22 @@
     --space-6:32px;
 
     --header-h:92px; /* fallback; the exact value is set from JS to match real header height */
+    --secondary-nav-h:54px; /* fallback; exact value set from JS */
+    --breadcrumb-h:0px; /* fallback; exact value set from JS - 0 when hidden (Welcome Page) */
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+
+  .toast{
+    position:fixed; left:50%; bottom:28px; transform:translate(-50%, 12px);
+    max-width:min(88vw, 380px);
+    background:var(--ink); color:var(--paper);
+    padding:12px 18px; border-radius:var(--radius-pill);
+    font-size:12.5px; font-weight:700; text-align:center; line-height:1.4;
+    box-shadow:var(--shadow-3);
+    z-index:200; pointer-events:none;
+    opacity:0; transition:opacity 220ms var(--ease), transform 220ms var(--ease);
+  }
+  .toast.show{ opacity:1; transform:translate(-50%, 0); }
   html{scroll-behavior:smooth;}
   html,body{margin:0;padding:0;}
   body{
@@ -115,12 +129,14 @@
      loading state instead. Removed automatically once the product opens
      (or falls back to the homepage if that product no longer exists). */
   .deep-link-pending .search-wrap,
-  .deep-link-pending .gender-hero,
+  .deep-link-pending #genderHero,
+  .deep-link-pending .secondary-nav,
+  .deep-link-pending #productsView,
   .deep-link-pending .cat-strip,
   .deep-link-pending .filter-strip,
   .deep-link-pending .selected-filters-row,
   .deep-link-pending #grid,
-  .deep-link-pending .show-more-wrap{
+  .deep-link-pending .pagination{
     display:none !important;
   }
   .deep-link-loader{
@@ -221,8 +237,8 @@
   .cart-btn{
     position:relative;
     background:none; border:none; cursor:pointer;
-    color:var(--ink); font-size:19px;
-    padding:0; width:40px; height:40px;
+    color:var(--ink); font-size:24px;
+    padding:0; width:48px; height:48px;
     display:flex; align-items:center; justify-content:center;
     border-radius:50%;
     transition:background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
@@ -230,13 +246,14 @@
   .cart-btn:hover{ background:var(--panel); }
   .cart-btn:active{ transform:scale(0.94); }
   .cart-btn .count{
-    position:absolute; top:1px; right:1px;
+    position:absolute; top:0; right:0;
     background:var(--gold); color:#fff; border-radius:50%;
-    min-width:17px; height:17px; padding:0 3px; font-size:10px; font-weight:800;
+    min-width:19px; height:19px; padding:0 3px; font-size:11px; font-weight:800;
     display:flex; align-items:center; justify-content:center;
     border:2px solid var(--paper);
     transition:transform var(--dur-fast) var(--ease);
   }
+  .cart-btn .count:empty{ display:none; }
   .cart-btn .count.bump{ transform:scale(1.35); }
   @keyframes cartIconBump{
     0%{ transform:scale(1); }
@@ -275,6 +292,17 @@
     border-top:1px solid rgba(255,255,255,0.12);
   }
   .site-footer .disclaimer b{ color:#e6e6e6; font-weight:700; }
+  .footer-links{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top:16px;
+  }
+  .footer-links button, .footer-links a{
+    background:none; border:none; padding:0; font-family:inherit;
+    font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;
+    color:#d8d8d8; cursor:pointer; text-decoration:none;
+  }
+  .footer-links button:hover, .footer-links a:hover{ color:#fff; text-decoration:underline; }
+  .footer-links-sep{ color:#666; }
 
   /* ---------- Search ---------- */
   .search-wrap{
@@ -428,25 +456,139 @@
   }
   @media(min-width:480px){ .gender-card-label{ font-size:21px; } }
   @media(min-width:640px){ .gender-card-label{ font-size:24px; } }
+  @media(min-width:1024px){ .gender-card-label{ font-size:38px; } }
 
-  /* New Arrivals / Sale have no natural "person wearing a shoe" or
-     single-product photo, so they use a plain branded gradient card
-     instead of guessing at a photo. */
-  .gender-card--text{ display:flex; align-items:center; justify-content:center; }
-  .gender-card--text.new-arrivals{ background:linear-gradient(135deg, #161616 0%, #3a3a3a 100%); }
-  .gender-card--text.sale{ background:linear-gradient(135deg, #7a1616 0%, #c0281f 100%); }
-  .gender-card--text .gender-card-label{ font-size:20px; text-shadow:none; }
-  @media(min-width:480px){ .gender-card--text .gender-card-label{ font-size:23px; } }
-  @media(min-width:640px){ .gender-card--text .gender-card-label{ font-size:26px; } }
+  /* ---------- Secondary nav (Welcome Page + dedicated pages) ---------- */
+  .secondary-nav{
+    display:flex; gap:8px; overflow-x:auto;
+    padding:10px 14px;
+    scrollbar-width:none;
+    border-bottom:1px solid var(--line);
+    background:var(--paper);
+    position:sticky; top:var(--header-h); z-index:10;
+  }
+  .secondary-nav::-webkit-scrollbar{ display:none; }
+  .secondary-nav-btn{
+    flex:none;
+    padding:8px 14px;
+    min-height:34px;
+    font-size:11.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    border:1.5px solid var(--line);
+    border-radius:var(--radius-pill);
+    background:var(--panel);
+    color:var(--ink);
+    cursor:pointer;
+    white-space:nowrap;
+    font-family:inherit;
+    transition:background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .secondary-nav-btn:active{ transform:scale(0.96); }
+  .secondary-nav-btn.active{ background:var(--ink); border-color:var(--ink); color:var(--paper); }
+  .secondary-nav-back{ background:var(--panel); border-color:var(--panel); font-weight:800; }
+  .secondary-nav-back:hover{ background:var(--panel-hover); border-color:var(--panel-hover); }
+
+  /* ---------- Breadcrumb trail ---------- */
+  .breadcrumb{
+    display:flex; align-items:center; flex-wrap:wrap; gap:5px;
+    padding:9px 16px;
+    font-size:11.5px;
+    border-bottom:1px solid var(--line);
+    background:var(--paper);
+    position:sticky; top:calc(var(--header-h) + var(--secondary-nav-h)); z-index:9;
+  }
+  .breadcrumb-link{
+    background:none; border:none; padding:2px 0; font:inherit; font-weight:700;
+    color:var(--muted); cursor:pointer; font-size:11.5px; font-family:inherit;
+  }
+  .breadcrumb-link:hover{ color:var(--ink); text-decoration:underline; }
+  .breadcrumb-current{ font-weight:800; color:var(--ink); }
+  .breadcrumb-sep{ color:var(--muted); font-size:11px; }
+
+  /* ---------- Welcome Page: Offers section ---------- */
+  .offers-section{ padding:18px 16px 4px; }
+  .offers-heading{
+    font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
+    font-size:26px; letter-spacing:0.03em; text-transform:uppercase; color:var(--ink);
+    margin:0 0 12px;
+  }
+  .offers-strip{
+    display:flex; gap:12px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px;
+  }
+  .offers-strip::-webkit-scrollbar{ display:none; }
+  .offer-card{
+    position:relative; overflow:hidden;
+    flex:none; width:62%; max-width:220px;
+    aspect-ratio:3/4;
+    border:none; border-radius:var(--radius-lg); cursor:pointer;
+    display:flex; align-items:flex-end; padding:16px;
+    box-shadow:var(--shadow-2);
+    transition:transform var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease);
+  }
+  .offer-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-3); }
+  .offer-card:active{ transform:scale(0.97); }
+  .offer-card-img{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;
+  }
+  .offer-card::after{
+    content:""; position:absolute; inset:0; z-index:1;
+    background:linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.75) 100%);
+  }
+  .offer-card-label{
+    position:relative; z-index:2;
+    color:#fff; font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
+    font-size:22px; line-height:1.2; letter-spacing:0.03em; text-transform:uppercase; text-align:left;
+    text-shadow:0 2px 8px rgba(0,0,0,0.35);
+  }
+  .offer-card.offer-1000{ background:linear-gradient(135deg, #c0281f 0%, #ff6a3d 100%); }
+  .offer-card.offer-1500{ background:linear-gradient(135deg, #7a1616 0%, #b8860b 100%); }
+  .offer-card.offer-2000{ background:linear-gradient(135deg, #161616 0%, #3a3a3a 100%); }
+
+  /* Compact version of the same 3 cards, used as the "which tier"
+     sub-nav on the Offers grid page itself (Home's Offers section stays
+     the larger, browsier version). Horizontally scrollable, current
+     tier gets a ring so it reads as a picker, not just a repeat of the
+     Welcome Page section. */
+  .offers-tier-strip{
+    display:flex; gap:10px; overflow-x:auto; scrollbar-width:none;
+    padding:14px 16px 4px;
+  }
+  .offers-tier-strip::-webkit-scrollbar{ display:none; }
+  .offer-card-compact{
+    flex:none; width:132px; aspect-ratio:16/10;
+    border:none; border-radius:var(--radius-md); cursor:pointer;
+    display:flex; align-items:flex-end; padding:10px;
+    box-shadow:var(--shadow-2);
+    transition:transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  }
+  .offer-card-compact:active{ transform:scale(0.96); }
+  .offer-card-compact.active{ box-shadow:0 0 0 2px var(--gold), var(--shadow-2); }
+  .offer-card-compact .offer-card-label{ font-size:14px; line-height:1.2; text-shadow:0 1px 5px rgba(0,0,0,0.4); }
+
+  /* ---------- Welcome Page: Men's/Women's stacked cards ---------- */
+  .welcome-gender-stack{
+    display:flex; flex-direction:column; gap:14px;
+    padding:18px 16px 20px;
+  }
+  @media(min-width:640px){ .welcome-gender-stack{ padding:22px 22px 26px; gap:18px; } }
+  @media(min-width:1280px){ .welcome-gender-stack{ max-width:960px; margin:0 auto; width:100%; } }
+  .gender-card-wide{ aspect-ratio:16/9; }
 
   /* ---------- Category strip ---------- */
   .cat-strip{
-    display:flex; gap:8px; overflow-x:auto;
+    display:flex; gap:10px; overflow-x:auto;
     padding:14px 16px 14px;
     scrollbar-width:none;
     border-bottom:1px solid var(--line);
   }
   .cat-strip::-webkit-scrollbar{display:none;}
+  .cat-strip-heading{
+    font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
+    font-size:22px; letter-spacing:0.03em; text-transform:uppercase; color:var(--ink);
+    padding:16px 16px 0; margin:0;
+  }
   .cat-chip{
     flex:none;
     padding:8px 14px;
@@ -462,11 +604,100 @@
     cursor:pointer;
     white-space:nowrap;
     font-family:inherit;
+    align-self:center;
     transition:background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   }
   .cat-chip:hover{ border-color:var(--line-strong); background:var(--panel-hover); }
   .cat-chip:active{ transform:scale(0.96); }
   .cat-chip.active{ background:var(--gold); border-color:var(--gold); color:#fff; box-shadow:var(--shadow-gold); }
+
+  /* Category picker cards - image + label, same visual language as the
+     Welcome Page's .gender-card, just sized to sit in a horizontal strip. */
+  .cat-pick-card{
+    position:relative; flex:none; display:block;
+    width:84px; border:none; padding:0; margin:0; cursor:pointer;
+    border-radius:var(--radius-lg); overflow:hidden;
+    aspect-ratio:3/4; background:var(--panel);
+    box-shadow:var(--shadow-2);
+    transition:transform var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease);
+  }
+  @media(min-width:480px){ .cat-pick-card{ width:96px; } }
+  .cat-pick-card:hover{ transform:translateY(-2px); box-shadow:var(--shadow-3); }
+  .cat-pick-card:active{ transform:scale(0.96); }
+  .cat-pick-card img{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    filter:grayscale(85%) contrast(1.08) brightness(0.92);
+    transition:transform 420ms var(--ease);
+  }
+  .cat-pick-card:hover img{ transform:scale(1.06); }
+  .cat-pick-card.active img{ filter:none; }
+  .cat-pick-card.active{ box-shadow:0 0 0 2px var(--gold), var(--shadow-2); }
+  .cat-pick-overlay{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(17,17,17,0) 45%, rgba(17,17,17,0.78) 100%);
+    display:flex; align-items:flex-end; justify-content:center;
+    padding:8px 4px;
+  }
+  .cat-pick-label{
+    color:#fff; font-weight:800; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:0.03em; text-align:center;
+    text-shadow:0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  /* ---------- Dedicated page heading (Men's/Women's/All Products) ---------- */
+  .page-heading{
+    font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
+    font-size:28px; letter-spacing:0.03em; text-transform:uppercase; color:var(--ink);
+    padding:18px 16px 0; margin:0;
+  }
+
+  /* Small Men's/Women's tiles shown above the grid, All Products view only */
+  .ap-gender-tiles{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    padding:14px 16px 4px;
+  }
+  .ap-gender-tile{
+    position:relative; display:block; border:none; padding:0; margin:0; cursor:pointer;
+    border-radius:var(--radius-md); overflow:hidden; aspect-ratio:16/9; background:var(--panel);
+    box-shadow:var(--shadow-2);
+  }
+  .ap-gender-tile img{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    filter:grayscale(85%) contrast(1.08) brightness(0.92);
+  }
+  .ap-gender-tile-overlay{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(17,17,17,0) 40%, rgba(17,17,17,0.75) 100%);
+    display:flex; align-items:flex-end; justify-content:center; padding:8px;
+  }
+  .ap-gender-tile-label{
+    color:#fff; font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
+    font-size:15px; letter-spacing:0.03em; text-transform:uppercase; text-shadow:0 2px 6px rgba(0,0,0,0.4);
+  }
+  @media(min-width:480px){ .ap-gender-tile-label{ font-size:17px; } }
+  @media(min-width:1024px){ .ap-gender-tile-label{ font-size:26px; } }
+
+  /* ---------- Pagination ---------- */
+  .pagination{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    flex-wrap:wrap; flex:1 0 auto;
+    padding:22px 16px 30px;
+  }
+  .page-arrow, .page-num{
+    display:flex; align-items:center; justify-content:center;
+    min-width:36px; height:36px; padding:0 4px;
+    border:none; background:transparent; cursor:pointer;
+    font-family:inherit; font-size:15px; font-weight:600; color:var(--ink);
+    border-radius:50%;
+    transition:background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .page-num:hover, .page-arrow:hover{ background:var(--panel); }
+  .page-num:active, .page-arrow:active{ transform:scale(0.92); }
+  .page-num.active{ background:var(--ink); color:var(--paper); font-weight:800; }
+  .page-arrow{ font-size:19px; color:var(--muted); }
+  .page-arrow[disabled]{ visibility:hidden; pointer-events:none; }
+  .page-num.ellipsis{ cursor:default; background:none !important; color:var(--muted); font-weight:600; }
+  .page-num.ellipsis:hover{ background:none; }
 
   /* ---------- Grid ---------- */
   .grid{
@@ -614,6 +845,20 @@
   .add-btn:not(:disabled):active{ transform:scale(0.97); }
   .add-btn:disabled{ background:#e4e4e1; color:#a3a3a0; cursor:not-allowed; }
   .add-btn.added{ background:var(--success); color:var(--success-ink); }
+
+  /* Explicit "already in your cart" status line, shown right above the
+     Add to Cart button whenever this product has at least one line in the
+     cart (any size). Separate from - and in addition to - the post-add
+     "View Cart" prompt below: that one is a call-to-action button, this
+     one is a plain status statement, so the state doesn't rely on the
+     shopper correctly reading a button's mere presence as confirmation. */
+  .in-cart-label{
+    display:flex; align-items:center; gap:6px;
+    font-size:12.5px; font-weight:700; color:#1a7a3c;
+    max-height:0; overflow:hidden; opacity:0; margin-top:0;
+    transition:max-height var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease), margin-top var(--dur-fast) var(--ease);
+  }
+  .in-cart-label.show{ max-height:60px; opacity:1; margin-top:14px; }
 
   /* Post-add "View Cart" prompt: appears right under Add to Cart the
      moment an item is successfully added, so the customer can go straight
@@ -786,6 +1031,98 @@
     padding:4px 8px; border-radius:var(--radius-pill);
   }
 
+  /* ---------- Save / Compare ---------- */
+  /* Shared row: brand name on the left (unchanged position), a small
+     heart toggle on the right, same row/height as the brand text but
+     pushed to the opposite edge via space-between - not visually grouped
+     with the brand text, just sharing its row. Used on both the grid
+     card body and the item-detail meta row. */
+  .brand-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .item-detail-right-group{ display:flex; align-items:center; gap:10px; }
+  .heart-toggle-btn{
+    background:none; border:none; cursor:pointer; padding:0;
+    font-size:17px; line-height:1; color:var(--muted);
+    display:flex; align-items:center; justify-content:center;
+    width:22px; height:22px; flex:none;
+    transition:color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .heart-toggle-btn:active{ transform:scale(0.82); }
+  .heart-toggle-btn.active{ color:var(--sale); }
+
+  .saved-line{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); align-items:center; }
+  .saved-line img{ width:58px; height:58px; object-fit:cover; border-radius:8px; background:#eee; flex:none; cursor:pointer; }
+  .saved-line .info{ flex:1; min-width:0; cursor:pointer; }
+  .saved-line .info .n{ font-size:13.5px; font-weight:700; line-height:1.3; }
+  .saved-line .info .m{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+  .saved-check{ flex:none; display:flex; align-items:center; }
+  .saved-check input{ width:18px; height:18px; accent-color:var(--ink); cursor:pointer; }
+  .saved-line .remove{
+    background:none; border:1px solid transparent; color:var(--sale); font-size:11px; font-weight:700;
+    cursor:pointer; text-transform:uppercase; padding:8px 6px; border-radius:6px; flex:none;
+    transition:background var(--dur-fast) var(--ease);
+  }
+  .saved-line .remove:hover{ background:rgba(179,38,30,0.08); }
+  .saved-compare-note{ margin-top:4px; }
+
+  /* ---------- Comparison page ----------
+     Previously a shared-label-column table: a sticky left-hand label
+     column plus one data column per product, all scrolling horizontally
+     together. On mobile that sticky column had no explicit stacking
+     order relative to the scrolling data columns, so on some devices the
+     label text visually overlapped the values instead of staying
+     cleanly pinned above/beside them - and at ~104px per column, only
+     about two products were ever comfortably on screen at once.
+     Rebuilt as self-contained cards instead (image/name/price/
+     attributes/buttons all inside one card, no cross-row width
+     dependency to keep in sync) - structurally can't misalign, and each
+     card is wide enough to read comfortably. */
+  .compare-cards-row{
+    display:flex; gap:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    padding:4px 2px 10px; margin-top:10px;
+    scroll-snap-type:x proximity;
+  }
+  .compare-card{
+    flex:0 0 auto; scroll-snap-align:start;
+    width:248px; max-width:78vw;
+    border:1.5px solid var(--line); border-radius:var(--radius-lg);
+    padding:14px; position:relative; background:var(--paper);
+  }
+  @media(min-width:640px){ .compare-card{ width:270px; max-width:340px; } }
+  .compare-card-remove{
+    position:absolute; top:10px; right:10px; z-index:2;
+    width:30px; height:30px; border-radius:50%; border:none;
+    background:var(--paper); box-shadow:var(--shadow-2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:800; color:var(--ink); cursor:pointer;
+  }
+  .compare-card-remove:hover{ background:var(--panel-hover); }
+  .compare-card-img{
+    width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:var(--radius-md);
+    display:block; cursor:pointer; background:var(--panel); margin-bottom:10px;
+  }
+  .compare-card-name{ font-size:14px; font-weight:800; line-height:1.3; margin-bottom:4px; min-height:2.6em; }
+  .compare-card-price-row{ display:flex; align-items:baseline; gap:7px; margin-bottom:12px; }
+  .compare-card-price{ font-size:16px; font-weight:800; color:var(--ink); }
+  .compare-card-price-was{ font-size:12px; color:var(--muted); text-decoration:line-through; }
+  .compare-size-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; font-weight:800; color:var(--muted); margin-bottom:6px; }
+  .compare-size-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+  .compare-size-row .size-btn{ min-width:38px; height:34px; font-size:12px; padding:0 8px; }
+  .compare-card-add-btn{
+    width:100%; margin-top:4px; margin-bottom:14px;
+    padding:11px; border-radius:var(--radius-pill); border:none;
+    background:var(--ink); color:var(--paper); font-weight:800; font-size:12.5px;
+    text-transform:uppercase; letter-spacing:0.03em; cursor:pointer; font-family:inherit;
+  }
+  .compare-card-add-btn:active{ transform:scale(0.98); }
+  .compare-card-add-btn.in-cart{ background:var(--panel); color:var(--ink); border:1.5px solid var(--line); }
+  .compare-attr-list{ margin:0; border-top:1px solid var(--line); padding-top:10px; }
+  .compare-attr-row{ padding:7px 0; border-bottom:1px solid var(--line); }
+  .compare-attr-row:last-child{ border-bottom:none; }
+  .compare-attr-row dt{ font-size:10px; text-transform:uppercase; letter-spacing:0.05em; font-weight:800; color:var(--muted); margin-bottom:2px; }
+  .compare-attr-row dd{ margin:0; font-size:12.5px; color:var(--ink); font-weight:600; line-height:1.45; }
+  .compare-attr-row--plain dd{ color:var(--muted); font-weight:500; }
+  .compare-cap-note{ font-size:12px; color:var(--muted); margin:2px 0 0; }
+
   /* ---------- Full-screen item detail ---------- */
   .item-detail-overlay{
     position:fixed; top:var(--header-h); left:0; right:0; bottom:0; background:var(--paper);
@@ -793,6 +1130,7 @@
     opacity:0; transition:opacity var(--dur-med) var(--ease);
   }
   .item-detail-overlay.open{ display:flex; opacity:1; }
+  .info-page-overlay{ top: calc(var(--header-h) + var(--secondary-nav-h) + var(--breadcrumb-h)); }
   .item-detail-back{
     position:absolute; top:12px; left:12px; z-index:3;
     background:var(--paper); border:1.5px solid var(--line); border-radius:var(--radius-pill);
@@ -1012,10 +1350,10 @@
   }
   .full-page-topbar .item-detail-back{
     position:static; box-shadow:none; flex:none;
-    width:32px; height:32px; padding:0; border:none;
-    background:var(--panel); border-radius:50%;
+    min-height:32px; padding:0 12px; border:none;
+    background:var(--panel); border-radius:var(--radius-pill);
     display:flex; align-items:center; justify-content:center;
-    font-size:16px; line-height:1;
+    font-size:13px; font-weight:700; line-height:1;
   }
   .full-page-topbar .item-detail-back:hover{ background:var(--panel-hover); }
   .full-page-topbar h1{ margin:0; font-size:14.5px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; }
@@ -1044,7 +1382,7 @@
      the Filters panel, which shouldn't be affected by this. */
   .size-guide-accordion .filter-accordion-header{ padding:19px 0; }
   .size-guide-accordion .filter-accordion-header h3{ font-size:14px; }
-  .size-guide-accordion .filter-accordion-header .chevron{ font-size:15px; }
+  .size-guide-accordion .filter-accordion-header .chevron{ font-size:22px; }
 
   .cart-line{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); align-items:center; cursor:pointer; }
   .cart-line img{width:58px; height:58px; object-fit:cover; border-radius:8px; background:#eee; flex:none;}
@@ -1136,18 +1474,6 @@
     padding:56px 20px; font-size:13.5px; line-height:1.6;
   }
   .grid-empty .emoji{ font-size:28px; display:block; margin-bottom:10px; }
-
-  /* ---------- Show more ---------- */
-  .show-more-wrap{ display:flex; justify-content:center; padding:6px 16px 28px; flex:1 0 auto; }
-  .show-more-btn{
-    padding:13px 30px; border-radius:var(--radius-pill);
-    border:1.5px solid var(--ink); background:transparent; color:var(--ink);
-    font-weight:800; font-size:12.5px; text-transform:uppercase; letter-spacing:0.04em;
-    cursor:pointer; font-family:inherit; min-height:46px;
-    transition:background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
-  }
-  .show-more-btn:hover{ background:var(--ink); color:var(--paper); }
-  .show-more-btn:active{ transform:scale(0.97); }
 
   /* ---------- Search row + filter toggle ---------- */
   .search-row{ display:flex; gap:9px; align-items:stretch; }
@@ -1269,6 +1595,8 @@
 </head>
 <body>
 
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <a href="#grid" class="skip-link">Skip to products</a>
 
 <header id="siteHeader">
@@ -1282,9 +1610,13 @@
     <div class="logo display">SNEAKIX</div>
   </div>
   <div class="header-side header-side-right">
+    <button class="cart-btn" onclick="openSaved()" aria-label="Open saved items">
+      <span class="cart-icon" id="heartIcon" aria-hidden="true"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></span>
+      <span class="count" id="heartCount" aria-live="polite"></span>
+    </button>
     <button class="cart-btn" onclick="openCart()" aria-label="Open cart">
-      <span class="cart-icon" id="cartIcon" aria-hidden="true">🛒</span>
-      <span class="count" id="cartCount" aria-live="polite">0</span>
+      <span class="cart-icon" id="cartIcon" aria-hidden="true"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg></span>
+      <span class="count" id="cartCount" aria-live="polite"></span>
     </button>
   </div>
 </header>
@@ -1294,43 +1626,73 @@
   <div>Opening product…</div>
 </div>
 
+<nav class="secondary-nav" id="secondaryNav" aria-label="Quick navigation">
+  <button class="secondary-nav-btn secondary-nav-back" id="navBackBtn" onclick="history.back()" aria-label="Back" style="display:none">‹ Back</button>
+  <button class="secondary-nav-btn" id="navHomeBtn" onclick="goHome()">Home</button>
+  <button class="secondary-nav-btn" id="navAllBtn" onclick="showAllProducts()">Shop</button>
+  <button class="secondary-nav-btn" id="navMensBtn" onclick="selectGenderCategory('mens')">Men's</button>
+  <button class="secondary-nav-btn" id="navWomensBtn" onclick="selectGenderCategory('womens')">Women's</button>
+  <button class="secondary-nav-btn" id="navOffersBtn" onclick="goToOffers()">Offers</button>
+  <button class="secondary-nav-btn" id="navPremiumBtn" onclick="selectPriceTierHero('premium3000')">Premium</button>
+</nav>
+
+<nav class="breadcrumb" id="breadcrumbNav" aria-label="Breadcrumb" style="display:none"></nav>
+
+<div id="genderHero">
+  <section class="offers-section" id="offersSection">
+    <h2 class="offers-heading">Offers</h2>
+    <div class="offers-strip">
+      <button class="offer-card offer-1000" onclick="selectPriceTierHero('under1000')" aria-label="Get a pair under 1000 rupees">
+        <img class="offer-card-img" src="images/hero-sale.jpg" alt="" onerror="this.remove()">
+        <span class="offer-card-label">Get a pair<br>under &#8377;1,000</span>
+      </button>
+      <button class="offer-card offer-1500" onclick="selectPriceTierHero('under1500')" aria-label="Get a pair under 1500 rupees">
+        <img class="offer-card-img" src="images/hero-new-arrivals.jpg" alt="" onerror="this.remove()">
+        <span class="offer-card-label">Get a pair<br>under &#8377;1,500</span>
+      </button>
+      <button class="offer-card offer-2000" onclick="selectPriceTierHero('under2000')" aria-label="Get a pair under 2000 rupees">
+        <img class="offer-card-img" src="images/hero-under2000.jpg" alt="" onerror="this.remove()">
+        <span class="offer-card-label">Get a pair<br>under &#8377;2,000</span>
+      </button>
+    </div>
+  </section>
+
+  <div class="welcome-gender-stack">
+    <button class="gender-card gender-card-wide" onclick="selectGenderCategory('mens')" aria-label="Shop Men's Footwear">
+      <img src="images/hero-mens.jpg" alt="Man wearing Reebok Club C sneakers">
+      <div class="gender-card-overlay"><span class="gender-card-label">Men's Footwear</span></div>
+    </button>
+    <button class="gender-card gender-card-wide" onclick="selectGenderCategory('womens')" aria-label="Shop Women's Footwear">
+      <img src="images/hero-womens.jpg" alt="Woman wearing PUMA Speedcat Ballet shoes">
+      <div class="gender-card-overlay"><span class="gender-card-label">Women's Footwear</span></div>
+    </button>
+  </div>
+</div>
+
+<div id="productsView">
+<h1 class="page-heading" id="pageHeading" style="display:none"></h1>
+<div class="ap-gender-tiles" id="apGenderTiles" style="display:none">
+  <button class="ap-gender-tile" onclick="selectGenderCategory('mens')" aria-label="Shop Men's Footwear">
+    <img src="images/hero-mens.jpg" alt="Man wearing Reebok Club C sneakers" loading="lazy">
+    <div class="ap-gender-tile-overlay"><span class="ap-gender-tile-label">Men's</span></div>
+  </button>
+  <button class="ap-gender-tile" onclick="selectGenderCategory('womens')" aria-label="Shop Women's Footwear">
+    <img src="images/hero-womens.jpg" alt="Woman wearing PUMA Speedcat Ballet shoes" loading="lazy">
+    <div class="ap-gender-tile-overlay"><span class="ap-gender-tile-label">Women's</span></div>
+  </button>
+</div>
+<div class="offers-tier-strip" id="offersTierStrip" style="display:none"></div>
+<div class="cat-strip" id="catStrip" role="group" aria-label="Categories"></div>
+
 <div class="search-wrap">
   <div class="search-row">
     <div class="search-box">
-      <span class="icon" aria-hidden="true">🔍</span>
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
       <input id="searchInput" type="search" aria-label="Search by name, brand, or edition" placeholder="Search by name, brand, or edition…" oninput="onSearch()">
     </div>
   </div>
 </div>
 
-<div class="gender-hero" id="genderHero">
-  <button class="gender-card" onclick="selectGenderCategory('mens')" aria-label="Shop Men's Footwear">
-    <img src="images/hero-mens.jpg" alt="Man wearing Reebok Club C sneakers">
-    <div class="gender-card-overlay"><span class="gender-card-label">Men's Footwear</span></div>
-  </button>
-  <button class="gender-card" onclick="selectGenderCategory('womens')" aria-label="Shop Women's Footwear">
-    <img src="images/hero-womens.jpg" alt="Woman wearing PUMA Speedcat Ballet shoes">
-    <div class="gender-card-overlay"><span class="gender-card-label">Women's Footwear</span></div>
-  </button>
-  <button class="gender-card" onclick="selectPriceTierHero('under2000')" aria-label="Shop shoes under 2000 rupees">
-    <img src="images/hero-under2000.jpg" alt="A heap of sneakers" loading="lazy">
-    <div class="gender-card-overlay"><span class="gender-card-label">Under &#8377;2000</span></div>
-  </button>
-  <button class="gender-card" onclick="selectPriceTierHero('premium3000')" aria-label="Shop premium shoes">
-    <img src="images/hero-premium.jpg" alt="A New Balance 991 premium sneaker" loading="lazy">
-    <div class="gender-card-overlay"><span class="gender-card-label">Premium Shoes</span></div>
-  </button>
-  <button class="gender-card" id="newArrivalsHeroCard" style="display:none" onclick="selectPriceTierHero('new')" aria-label="Shop new arrivals">
-    <img src="images/hero-new-arrivals.jpg" alt="Stacked sneaker boxes" loading="lazy">
-    <div class="gender-card-overlay"><span class="gender-card-label">New Arrivals</span></div>
-  </button>
-  <button class="gender-card" id="saleHeroCard" style="display:none" onclick="selectPriceTierHero('sale')" aria-label="Shop sale">
-    <img src="images/hero-sale.jpg" alt="Man holding an armful of sneakers" loading="lazy">
-    <div class="gender-card-overlay"><span class="gender-card-label">Sale</span></div>
-  </button>
-</div>
-
-<div class="cat-strip" id="catStrip" role="group" aria-label="Categories"></div>
 <div class="filter-strip" id="filterStrip" role="group" aria-label="Quick filters"></div>
 <div class="selected-filters-row" id="selectedFiltersRow" role="group" aria-label="Active filters"></div>
 
@@ -1339,7 +1701,8 @@
     <div class="spin"></div>
   </div>
 </main>
-<div class="show-more-wrap" id="showMoreWrap"></div>
+<nav class="pagination" id="paginationWrap" aria-label="Product pages"></nav>
+</div>
 
 <footer class="site-footer">
   <div class="footer-inner">
@@ -1349,12 +1712,17 @@
       <a href="#" id="footerFacebook" target="_blank" rel="noopener" aria-label="Sneakix on Facebook" class="social-btn">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.505 17.523 2 12 2S2 6.505 2 12.06c0 5.022 3.657 9.184 8.438 9.94v-7.03H7.898v-2.91h2.54V9.845c0-2.522 1.492-3.915 3.777-3.915 1.094 0 2.238.197 2.238.197v2.475h-1.26c-1.243 0-1.63.775-1.63 1.57v1.888h2.773l-.443 2.91h-2.33V22c4.78-.756 8.437-4.918 8.437-9.94Z"/></svg>
       </a>
-      <a href="#" id="footerWhatsapp" target="_blank" rel="noopener" aria-label="Sneakix on WhatsApp" class="social-btn">
-        <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16.004 3C9.096 3 3.49 8.606 3.49 15.513c0 2.373.66 4.59 1.804 6.482L3 29l7.176-2.257a12.46 12.46 0 0 0 5.828 1.457h.005c6.907 0 12.512-5.606 12.512-12.513C28.52 8.78 22.916 3 16.004 3zm0 22.851h-.004a10.34 10.34 0 0 1-5.267-1.442l-.378-.224-3.912 1.23 1.253-3.815-.246-.393a10.31 10.31 0 0 1-1.578-5.494c0-5.7 4.638-10.338 10.336-10.338 2.761 0 5.356 1.077 7.31 3.032a10.27 10.27 0 0 1 3.024 7.31c0 5.7-4.638 10.134-10.538 10.134zm5.665-7.735c-.31-.156-1.835-.906-2.119-1.01-.284-.104-.491-.156-.698.156-.207.31-.802 1.009-.983 1.216-.181.207-.362.233-.672.078-.31-.156-1.31-.483-2.495-1.539-.923-.823-1.546-1.84-1.727-2.15-.181-.31-.02-.478.136-.633.14-.14.31-.362.465-.543.155-.181.207-.31.31-.517.104-.207.052-.388-.026-.543-.078-.156-.698-1.682-.956-2.303-.252-.605-.508-.523-.698-.533-.181-.008-.388-.01-.595-.01-.207 0-.543.078-.828.388-.284.31-1.086 1.061-1.086 2.587s1.112 3 1.267 3.207c.156.207 2.19 3.343 5.305 4.688.741.32 1.319.511 1.77.654.744.236 1.42.203 1.955.123.596-.089 1.835-.75 2.094-1.474.259-.724.259-1.345.181-1.474-.078-.129-.284-.207-.594-.362z"/></svg>
-      </a>
       <a href="#" id="footerInstagram" target="_blank" rel="noopener" aria-label="Sneakix on Instagram" class="social-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1"/></svg>
       </a>
+    </div>
+
+    <div class="footer-links">
+      <button onclick="openSizeGuidePage()">Size Chart</button>
+      <span class="footer-links-sep" aria-hidden="true">·</span>
+      <button onclick="openPoliciesPage()">Terms &amp; Policy</button>
+      <span class="footer-links-sep" aria-hidden="true">·</span>
+      <a href="#" id="footerContactUs" target="_blank" rel="noopener">Contact Us</a>
     </div>
 
     <p class="disclaimer">
@@ -1374,21 +1742,15 @@
 
     <div class="hamburger-section-title" id="hamburgerHeading">Menu</div>
     <button class="hamburger-link" onclick="closeHamburger(); goHome();">Home</button>
-    <a class="hamburger-link wa-link" id="hamburgerWaBtn" href="#" target="_blank" rel="noopener" onclick="closeHamburger()">Contact on WhatsApp</a>
+    <button class="hamburger-link" onclick="closeHamburger(); showAllProducts();">Shop</button>
+    <button class="hamburger-link" onclick="closeHamburger(); selectGenderCategory('mens')">Men's Footwear</button>
+    <button class="hamburger-link" onclick="closeHamburger(); selectGenderCategory('womens')">Women's Footwear</button>
+    <button class="hamburger-link" onclick="closeHamburger(); goToOffers();">Offers</button>
+    <button class="hamburger-link" onclick="closeHamburger(); selectPriceTierHero('premium3000')">Premium</button>
+
+    <a class="hamburger-link wa-link" id="hamburgerWaBtn" href="#" target="_blank" rel="noopener" onclick="closeHamburger()">Contact Us</a>
     <button class="hamburger-link" onclick="closeHamburger(); openSizeGuidePage()">Size Chart</button>
     <button class="hamburger-link no-border" onclick="closeHamburger(); openPoliciesPage()">Terms & Policy</button>
-
-    <div class="hamburger-divider"></div>
-    <div class="hamburger-cats">
-      <button class="hamburger-cat-chip" onclick="closeHamburger(); selectGenderCategory('mens')">Men's Footwear</button>
-      <button class="hamburger-cat-chip" onclick="closeHamburger(); selectGenderCategory('womens')">Women's Footwear</button>
-      <button class="hamburger-cat-chip" onclick="closeHamburger(); selectPriceTierHero('under2000')">Under ₹2000</button>
-      <button class="hamburger-cat-chip" id="hamburgerPremiumBtn" onclick="closeHamburger(); selectPriceTierHero('premium3000')">Premium Shoes</button>
-      <button class="hamburger-cat-chip" id="hamburgerNewArrivalsBtn" style="display:none" onclick="closeHamburger(); selectPriceTierHero('new')">New Arrivals</button>
-      <button class="hamburger-cat-chip" id="hamburgerSaleBtn" style="display:none" onclick="closeHamburger(); selectPriceTierHero('sale')">Sale</button>
-    </div>
-    <div class="hamburger-divider"></div>
-    <div class="hamburger-cats" id="hamburgerCats"></div>
   </div>
 </div>
 
@@ -1404,14 +1766,14 @@
   <div class="lightbox-thumbs" id="lightboxThumbs"></div>
 </div>
 
-<!-- Policies - dedicated full page (was a bottom-sheet overlay) -->
-<div class="item-detail-overlay" id="policiesPage" role="dialog" aria-modal="true" aria-labelledby="policyHeading">
-  <div class="full-page-topbar">
-    <button class="item-detail-back" onclick="history.back()" aria-label="Back">←</button>
-    <h1 id="policyHeading">Terms &amp; Policy</h1>
-  </div>
+<!-- Policies - dedicated full page (was a bottom-sheet overlay). No
+     separate topbar/back button here anymore - the secondary nav stays
+     visible above this page (see #policiesPage top offset in CSS) and
+     its Back button covers this. -->
+<div class="item-detail-overlay info-page-overlay" id="policiesPage" role="dialog" aria-modal="true" aria-labelledby="policyHeading">
   <div class="item-detail-scroll">
     <div class="item-detail-info">
+      <h1 class="page-heading" id="policyHeading" style="padding-top:0">Terms &amp; Policy</h1>
       <p class="policy-sub">Please read carefully before placing your order</p>
 
       <div class="policy-block">
@@ -1436,7 +1798,7 @@
             <li>Record the complete unboxing process without interruption.</li>
             <li>Clearly show every angle of the received product.</li>
           </ul>
-          <p style="margin-top:10px;"><strong>Important:</strong> Any edited, cut, or paused video will be automatically rejected.</p>
+          <p style="margin-top:10px;"><strong>Important:</strong> Any edited or cut video will be automatically rejected.</p>
         </div>
       </div>
 
@@ -1480,14 +1842,14 @@
   </div>
 </div>
 
-<!-- Size Guide - dedicated full page (was a bottom-sheet overlay) -->
-<div class="item-detail-overlay" id="sizeGuidePage" role="dialog" aria-modal="true" aria-labelledby="sizeChartHeading">
-  <div class="full-page-topbar">
-    <button class="item-detail-back" onclick="history.back()" aria-label="Back">←</button>
-    <h1 id="sizeChartHeading">Size Chart</h1>
-  </div>
+<!-- Size Guide - dedicated full page (was a bottom-sheet overlay). No
+     separate topbar/back button here anymore - the secondary nav stays
+     visible above this page (see #sizeGuidePage top offset in CSS) and
+     its Back button covers this. -->
+<div class="item-detail-overlay info-page-overlay" id="sizeGuidePage" role="dialog" aria-modal="true" aria-labelledby="sizeChartHeading">
   <div class="item-detail-scroll">
     <div class="item-detail-info">
+      <h1 class="page-heading" id="sizeChartHeading" style="padding-top:0">Size Chart</h1>
 
       <div class="how-to-measure">
         <h3>How to Measure?</h3>
@@ -1525,9 +1887,18 @@
 </div>
 
 <!-- Full-screen item detail -->
-<div class="item-detail-overlay" id="itemDetailOverlay" role="dialog" aria-modal="true" aria-label="Product details">
-  <button class="item-detail-back" onclick="closeItemDetail()" aria-label="Back">← Back</button>
+<div class="item-detail-overlay info-page-overlay" id="itemDetailOverlay" role="dialog" aria-modal="true" aria-label="Product details">
+  <button class="item-detail-back" onclick="closeItemDetail()" aria-label="Back">‹ Back</button>
   <div class="item-detail-scroll" id="itemDetailContent"></div>
+</div>
+
+<!-- Saved items / Compare -->
+<div class="item-detail-overlay" id="savedOverlay" role="dialog" aria-modal="true" aria-labelledby="savedHeading">
+  <div class="full-page-topbar">
+    <button class="item-detail-back" onclick="closeSaved()" aria-label="Back">‹ Back</button>
+    <h1 id="savedHeading">Saved Items</h1>
+  </div>
+  <div class="item-detail-scroll" id="savedContent"></div>
 </div>
 
 <!-- Filters sheet -->
@@ -1738,7 +2109,7 @@
    description    -> slash- or comma-separated tags, e.g. "Brand Box/Suede
                       Leather/Kerala" - NOT a full sentence, and NOT where
                       Quality goes (see the quality column above). A
-                      "Kerala" tag (exact match, any case) shows "2-4 Days
+                      "Kerala" tag (exact match, any case) shows "1-4 Days
                       Delivery in Kerala." on its own line - the word
                       "Kerala" itself is never displayed, it's just a
                       trigger. Tags matching a known physical accessory
@@ -1753,6 +2124,12 @@
                       mangled and new phrases never need a code change.
                       Blank cell -> "Standard packaging." See
                       buildDescriptionLines() for the exact rules.
+   Website_Listed -> "1" or "2" shows the product on the website; "0",
+                      blank, or any other value hides it. "2" additionally
+                      gets priority placement at the top of the default
+                      sort (still shown normally under Price/A-Z sorts) -
+                      use it to bump specific items without hiding "1"
+                      rows or reordering the sheet itself.
    ========================================================= */
 const WHATSAPP_NUMBER = "919778781170"; // <-- your real WhatsApp number, country code + number, no + or spaces
 const SITE_URL = "https://sneakix.pages.dev/"; // <-- must exactly match wherever this site is actually live (update again if you move to a custom domain)
@@ -1887,10 +2264,17 @@ function rowsToShoes(rows){
       returnAvailable: toBool(getRowValue(r, "Return Available", "Return Availiable", "ReturnAvailable")),
       isNew: toBool(r["New Arrival"]),
       isSale: toBool(r["Sale"]),
+      // "1" and "2" both list the product; "0", blank, or anything else
+      // keeps it out of the catalog entirely. "2" additionally gets sort
+      // priority in the default view (see listedPriority + the "latest"
+      // sort branch in getFilteredShoes) - it's a priority flag, not a
+      // second on/off value, so it must never be treated as "hidden".
+      websiteListed: ["1", "2"].includes((r["Website_Listed"] || "").toString().trim()),
+      listedPriority: (r["Website_Listed"] || "").toString().trim() === "2" ? 2 : 1,
       images: images,
       description
     };
-  }).filter(s => s.name && s.images.length > 0);
+  }).filter(s => s.name && s.images.length > 0 && s.websiteListed);
 }
 
 // ---------- Catalog caching (localStorage) ----------
@@ -1940,8 +2324,6 @@ function applyCatalogRows(rawRows, isLiveFetch){
   renderFilterStrip();
   renderCategories();
   renderFilterSheet();
-  renderHamburgerCategories();
-  updateHamburgerQuickFilterVisibility();
   renderSelectedFilters();
   renderGrid();
   updateCartCount();
@@ -1958,6 +2340,13 @@ function applyCatalogRows(rawRows, isLiveFetch){
     else closeItemDetail();
   } else {
     routeToShoeFromHashOnLoad(isLiveFetch);
+    if(!hashViewApplied){
+      hashViewApplied = true;
+      const h = location.hash;
+      if(h && h !== "#size-guide" && h !== "#policies" && !/^#shoe-\d+$/.test(h)){
+        applyViewFromHash(h);
+      }
+    }
   }
 
   // Now that the cart survives across visits (see cart persistence below),
@@ -1966,7 +2355,7 @@ function applyCatalogRows(rawRows, isLiveFetch){
   // product that's been removed entirely. Only reconcile against the live
   // fetch, not the instant cache pass, since the cache itself could be the
   // stale side.
-  if(isLiveFetch) reconcileCartWithCatalog();
+  if(isLiveFetch){ reconcileCartWithCatalog(); reconcileSavedWithCatalog(); }
 }
 
 function reconcileCartWithCatalog(){
@@ -2075,7 +2464,14 @@ const SHIPPING_TIERS = {
 
 /* ============ App logic ============ */
 
-let activeFilter = "all";       // all | new | sale | under2000
+// true = showing the Welcome Page (Offers + Men's/Women's cards, no grid).
+// false = showing the products view (search/filters/grid) - reached via
+// Men's/Women's, an Offers tier, Discounts, or All Products.
+let onWelcomePage = true;
+let currentDedicatedView = null; // null while on Home; else "mens"|"womens"|"all"|"discounts"|"premium"|"new"|"offers1000"|"offers1500"|"offers2000"
+let suppressViewHashPush = false;
+let hashViewApplied = false;
+let activeFilter = "all";       // all | new | sale | under2000 | under1500 | under1000 | premium3000
 let activeGender = null;        // null | "M" | "W" - independent of category/type now that Gender is its own sheet column
 let activeCategory = "All";     // shoe TYPE filter (Shoes/Boots/Ballet/Loafers/Formals/Sandals) - no longer encodes gender
 let activeType = "All";         // shoe type within a category, e.g. Sneakers | Sandals | Formal
@@ -2086,7 +2482,7 @@ let activeModels = new Set();   // multi-select: empty set = "All"
 let priceMin = 0;
 let priceMax = 10000;
 let activeSizes = new Set();    // multi-select: empty set = "Any size". Numeric values (EU/UK/W all share one numeric space).
-let activeSort = "latest"; // latest | price_low | price_high
+let activeSort = "latest"; // latest ("Default") | newest | price_low | price_high | az
 let searchTerm = "";
 
 // ---------- Cart persistence (localStorage) ----------
@@ -2122,15 +2518,54 @@ const selections = {};
 const quantities = {};          // shoeId -> chosen quantity on the item detail page, default 1
 let selectedShipping = "free";
 
+// ---------- Saved items / Compare persistence (localStorage) ----------
+// Same pattern as the cart above: a plain array of shoe IDs (save order
+// preserved), persisted so the heart-toggle state survives a reload.
+const SAVED_STORAGE_KEY = "sneakix_saved_v1";
+
+function saveSavedToStorage(){
+  try {
+    localStorage.setItem(SAVED_STORAGE_KEY, JSON.stringify(savedIds));
+  } catch(e){
+    // Storage full/unavailable - saved list still works this session.
+  }
+}
+
+function loadSavedFromStorage(){
+  try {
+    const raw = localStorage.getItem(SAVED_STORAGE_KEY);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e){
+    return [];
+  }
+}
+
+let savedIds = loadSavedFromStorage();      // array of shoe IDs, save order preserved
+let compareSelection = new Set();           // subset of savedIds currently checked for comparison (2-4)
+
+let toastTimer = null;
+function showToast(message){
+  const el = document.getElementById("toast");
+  if(!el) return;
+  el.textContent = message;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
+}
+let savedViewMode = "list";                 // "list" | "compare" - which content the Saved page currently shows
+
 const PAGE_SIZE = 12;
-let visibleCount = PAGE_SIZE;
+let currentPage = 1;
 let preloadNextBatchTimer = null;
 let currentFullPage = null; // 'size-guide' | 'policies' | null - declared early since closeAllOverlays() (used throughout) reads it
 
 document.getElementById("hamburgerWaBtn").href = `https://wa.me/${WHATSAPP_NUMBER}`;
-document.getElementById("footerWhatsapp").href = `https://wa.me/${WHATSAPP_NUMBER}`;
+document.getElementById("footerContactUs").href = `https://wa.me/${WHATSAPP_NUMBER}`;
 document.getElementById("footerFacebook").href = FACEBOOK_URL;
 document.getElementById("footerInstagram").href = INSTAGRAM_URL;
+updateSavedCount(); // reflect whatever was already saved in a previous visit
 
 // Sticky header gains a shadow once the page scrolls, giving depth without hiding content
 const siteHeader = document.getElementById("siteHeader");
@@ -2145,6 +2580,10 @@ window.addEventListener("scroll", () => {
 // every overlay via --header-h, so nothing ever renders underneath it.
 function syncHeaderHeightVar(){
   document.documentElement.style.setProperty("--header-h", `${siteHeader.offsetHeight}px`);
+  const nav = document.getElementById("secondaryNav");
+  if(nav) document.documentElement.style.setProperty("--secondary-nav-h", `${nav.offsetHeight}px`);
+  const crumb = document.getElementById("breadcrumbNav");
+  if(crumb) document.documentElement.style.setProperty("--breadcrumb-h", `${crumb.offsetHeight}px`);
 }
 syncHeaderHeightVar();
 window.addEventListener("resize", syncHeaderHeightVar);
@@ -2177,43 +2616,27 @@ function updateBodyScrollLock(){
 // nothing changes visually. The header stays interactive on purpose -
 // its hamburger menu and hero-card links are meant to stay reachable
 // while these pages are open.
-const BACKGROUND_INERT_SELECTOR = ".skip-link, .deep-link-loader, .search-wrap, #genderHero, #catStrip, #filterStrip, #selectedFiltersRow, #grid, #showMoreWrap, .site-footer";
+const BACKGROUND_INERT_SELECTOR = ".skip-link, .deep-link-loader, .secondary-nav, .search-wrap, #genderHero, #productsView, #catStrip, #filterStrip, #selectedFiltersRow, #grid, .pagination, .site-footer";
 function syncBackgroundInertState(){
-  const shouldBeInert = itemDetailShoeId !== null || currentFullPage !== null;
+  const savedOpen = document.getElementById("savedOverlay")?.classList.contains("open");
+  const productDetailOpen = itemDetailShoeId !== null;
+  const anyOverlayOpen = productDetailOpen || savedOpen || currentFullPage !== null;
   document.querySelectorAll(BACKGROUND_INERT_SELECTOR).forEach(el => {
-    el.inert = shouldBeInert;
+    // The secondary nav stays visible (and usable) above Product Detail
+    // and the Size Chart/Policies pages now - only the Saved/Compare
+    // overlay still fully covers it (unchanged - keeps its own back
+    // behavior, same as before).
+    el.inert = el.classList.contains("secondary-nav") ? savedOpen : anyOverlayOpen;
   });
 }
 
 function openHamburger(){
-  renderHamburgerCategories();
   document.getElementById("hamburgerOverlay").classList.add("open");
   updateBodyScrollLock();
 }
 function closeHamburger(){
   document.getElementById("hamburgerOverlay").classList.remove("open");
   updateBodyScrollLock();
-}
-
-// Category shortcuts inside the hamburger menu - built from whatever
-// shoe types actually exist in the sheet right now (Shoes/Boots/Ballet/
-// Loafers/Formals/Sandals), same order as the cat-strip chips. Gender
-// has its own "Shop by Gender" section above instead of being mixed in
-// here.
-function renderHamburgerCategories(){
-  const wrap = document.getElementById("hamburgerCats");
-  if(!wrap) return;
-  const present = new Set(SHOES.map(s => normalizeCategoryValue(s.category).toLowerCase()));
-  const cats = CATEGORY_ORDER.filter(c => c !== "All" && present.has(c.toLowerCase()));
-  wrap.innerHTML = cats.map(c =>
-    `<button class="hamburger-cat-chip" onclick="jumpToCategory('${escForInlineJs(c)}')">${c}</button>`
-  ).join("");
-}
-function jumpToCategory(c){
-  closeAllOverlays();
-  clearAllFilters();
-  setCategory(c);
-  document.getElementById("grid").scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
 /* ---------- Full-screen photo lightbox ---------- */
@@ -2701,7 +3124,7 @@ function qualityLabel(rawQuality){
 // "Brand Box/Suede Leather/Kerala" rather than a full sentence.
 // This turns those tags into short display sentences:
 //   - a "Kerala" tag (exact match, case-insensitive) becomes its own line:
-//     "2-4 Days Delivery in Kerala." - the word "Kerala" itself is never
+//     "1-4 Days Delivery in Kerala." - the word "Kerala" itself is never
 //     shown, it's purely a trigger.
 //   - tags matching a KNOWN_ACCESSORIES entry below (Brand Box, Dust Bag,
 //     Extra Laces, etc. - physical things that come in the box) all fold
@@ -2763,7 +3186,7 @@ function buildDescriptionLines(rawDescription){
   const lines = [];
 
   const hasKerala = tags.some(t => t.toLowerCase() === "kerala");
-  if(hasKerala) lines.push("2-4 Days Delivery in Kerala.");
+  if(hasKerala) lines.push("1-4 Days Delivery in Kerala.");
 
   const remaining = tags.filter(t => t.toLowerCase() !== "kerala");
   const accessories = [];
@@ -2877,7 +3300,7 @@ function renderFilterStrip(){
   // doesn't stay stuck showing zero results for a filter that vanished.
   // (Under ₹2000/Premium/New Arrivals/Sale are exempt - they're only
   // ever set via the hero cards / hamburger menu, not this pill row.)
-  const HERO_ONLY_FILTERS = ["under2000", "premium3000", "new", "sale"];
+  const HERO_ONLY_FILTERS = ["under1000", "under1500", "under2000", "premium3000"];
   if(activeFilter !== "all" && !HERO_ONLY_FILTERS.includes(activeFilter) && !filters.some(([key]) => key === activeFilter)){
     activeFilter = "all";
     strip.innerHTML = rowHtml();
@@ -2888,11 +3311,11 @@ function renderFilterStrip(){
 // "under2000"/"premium3000", which no longer have a pill of their own here
 // but still need a human-readable label for the removable chip in the
 // selected-filters row (see renderSelectedFilters).
-const QUICK_FILTER_LABELS = { under2000:"Under ₹2000", premium3000:"Premium Shoes", new:"New Arrivals", sale:"Sale" };
+const QUICK_FILTER_LABELS = { under1000:"Under ₹1,000", under1500:"Under ₹1,500", under2000:"Under ₹2000", premium3000:"Premium Shoes" };
 
 function setFilter(key){
   activeFilter = key;
-  visibleCount = PAGE_SIZE;
+  currentPage = 1;
   renderFilterStrip(); renderSelectedFilters(); renderGrid();
   updateGenderHeroVisibility();
   trackEvent('select_filter', { filter_type: 'quick_filter', filter_value: key });
@@ -2906,42 +3329,20 @@ function setFilter(key){
 // action rather than a quick in-page toggle.
 function selectPriceTierHero(key){
   closeAllOverlays();
+  onWelcomePage = false;
   activeFilter = key;
   activeGender = null; activeCategory = "All"; activeType = "All";
   activeBrands.clear(); activeModels.clear(); activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear();
-  visibleCount = PAGE_SIZE;
+  currentPage = 1;
   renderFilterStrip(); renderCategories(); renderFilterSheet(); renderSelectedFilters(); renderGrid();
   updateGenderHeroVisibility();
-  document.getElementById("grid").scrollIntoView({ behavior:"smooth", block:"start" });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// New Arrivals/Sale only show - as hero cards AND in the hamburger menu
-// - when at least one product is actually flagged that way right now;
-// otherwise they'd be a dead link to an empty grid. Whichever hamburger
-// button ends up last and visible gets the "no-border" class so the bold
-// divider below it doesn't end up doubled with a regular hairline,
-// however many of these four end up showing.
-function updateHamburgerQuickFilterVisibility(){
-  const hasNewArrivals = SHOES.some(s => s.isNew);
-  const hasSale = SHOES.some(s => s.isSale || shoeDiscountPercent(s) !== null);
-  const premiumBtn = document.getElementById("hamburgerPremiumBtn");
-  const newBtn = document.getElementById("hamburgerNewArrivalsBtn");
-  const saleBtn = document.getElementById("hamburgerSaleBtn");
-  if(newBtn) newBtn.style.display = hasNewArrivals ? "" : "none";
-  if(saleBtn) saleBtn.style.display = hasSale ? "" : "none";
-
-  const chips = [premiumBtn, newBtn, saleBtn].filter(Boolean);
-  chips.forEach(b => b.classList.remove("no-border"));
-  for(let i = chips.length - 1; i >= 0; i--){
-    if(chips[i].style.display !== "none"){ chips[i].classList.add("no-border"); break; }
-  }
-
-  const newHero = document.getElementById("newArrivalsHeroCard");
-  const saleHero = document.getElementById("saleHeroCard");
-  if(newHero) newHero.style.display = hasNewArrivals ? "" : "none";
-  if(saleHero) saleHero.style.display = hasSale ? "" : "none";
-}
-
+// New Arrivals/Sale hero cards only show when at least one product is
+// actually flagged that way right now - otherwise they'd be a dead link
+// to an empty grid. (These no longer have hamburger shortcuts of their
+// own - the hamburger menu is now a fixed list, see F1.)
 // Safely embed a sheet-provided string inside onclick="fn('${...}')".
 // Without this, any value containing an apostrophe (e.g. "Women's")
 // prematurely closes the JS string and silently breaks the click handler.
@@ -2976,39 +3377,334 @@ function categoryType(cat){
 
 // A shoe matches a gender filter if it's explicitly tagged for that
 // gender, or tagged "MW" (Men's & Women's - shown under both).
+// Inline SVG icons - replaces the Unicode ♡/♥ glyphs (which render as an
+// elongated, uneven shape in several system fonts) with one consistent,
+// evenly-proportioned heart everywhere it's used: header, grid cards,
+// and the product detail page. `filled` toggles outline vs solid.
+function heartGlyph(filled){
+  return `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+}
+
 function shoeMatchesGender(shoe, g){
   return shoe.gender === "MW" || shoe.gender === g;
 }
 
-// Fixed display order for category (type) chips. Only categories that
-// actually have at least one product are shown, but whenever present
-// they always appear in this order rather than the sheet's order.
-const CATEGORY_ORDER = ["All", "Shoes", "Boots", "Ballet", "Loafers", "Formals", "Sandals"];
+// Fixed display order for category (type) chips/cards. Only categories
+// that actually have at least one product are shown, but whenever
+// present they always appear in this order rather than the sheet's
+// order. Heels and Clogs are new - they'll simply stay hidden (like any
+// other category) until the sheet has stock tagged with those exact
+// Category values and Website_Listed=1.
+const CATEGORY_ORDER = ["All", "Shoes", "Boots", "Ballet", "Loafers", "Formals", "Sandals", "Heels", "Clogs"];
 
-function renderCategories(){
-  const present = new Set(SHOES.map(s => normalizeCategoryValue(s.category).toLowerCase()));
-  const cats = CATEGORY_ORDER.filter(c => c === "All" || present.has(c.toLowerCase()));
-  const strip = document.getElementById("catStrip");
-  strip.innerHTML = cats.map(c =>
-    `<button class="cat-chip ${c===activeCategory?'active':''}" onclick="setCategory('${escForInlineJs(c)}')" aria-pressed="${c===activeCategory}">${c}</button>`
-  ).join("");
+// One representative photo per category, used by the image-card picker.
+// Falls back to a plain text chip (no image) for any category without an
+// entry here, so a future new category never renders broken.
+const CATEGORY_IMAGES = {
+  Shoes: "images/cat-shoes.jpg",
+  Boots: "images/cat-boots.jpg",
+  Ballet: "images/cat-ballet.jpg",
+  Loafers: "images/cat-loafers.jpg",
+  Formals: "images/cat-formals.jpg",
+  Sandals: "images/cat-sandals.jpg",
+  Heels: "images/cat-heels.jpg",
+  Clogs: "images/cat-clogs.jpg",
+};
+
+// Image + text category picker ("C system"). Gender-specific: on a
+// scoped Men's/Women's view, only categories with stock *for that
+// gender* are shown, computed live from SHOES rather than hardcoded.
+// On a gender-mixed view (All Products/Offers/Discounts), stock is
+// checked across all genders instead - there's no single gender to
+// scope to. "All" always shows first as a plain text chip since it has
+// no natural product photo.
+// Which shoes count toward "does this category have stock" - scoped to
+// whatever section we're currently in (a gender page, an Offers tier,
+// Premium Shoes), not just gender. This is what keeps the category
+// picker from ever showing an empty category: e.g. inside Offers >
+// Under ₹1,000, a category with stock generally but nothing under ₹1,000
+// specifically should stay hidden until that tier is cleared.
+function categoryScopeShoes(){
+  return SHOES.filter(s => {
+    if(activeGender && !shoeMatchesGender(s, activeGender)) return false;
+    if(activeFilter === "under1000" && s.price >= 1000) return false;
+    if(activeFilter === "under1500" && s.price >= 1500) return false;
+    if(activeFilter === "under2000" && s.price >= 2000) return false;
+    if(activeFilter === "premium3000" && s.price < 2750) return false;
+    return true;
+  });
 }
 
-// The four homepage hero cards (Men's/Women's Footwear, Under ₹2000,
-// Premium Shoes) are only shown on the true, unfiltered homepage state -
-// once a gender OR a quick filter is active, they'd just be duplicating
-// the exit-chip already showing above the grid, so they're hidden to
-// keep the page focused on the product grid.
+// Image + text category picker ("C system"). "All" isn't shown as its
+// own card - entering any section (gender page, Offers tier, Premium,
+// All Products) already lands on the unfiltered view for that section by
+// default, so there's nothing an "All" card would do that arriving at
+// the section doesn't already do. The breadcrumb's section segment
+// doubles as the way back to "all categories" once a category is picked.
+function renderCategories(){
+  const scoped = categoryScopeShoes();
+  const present = new Set(scoped.map(s => normalizeCategoryValue(s.category).toLowerCase()));
+  const cats = CATEGORY_ORDER.filter(c => c !== "All" && present.has(c.toLowerCase()));
+  const strip = document.getElementById("catStrip");
+  strip.innerHTML = cats.map(c => {
+    const img = CATEGORY_IMAGES[c];
+    if(!img){
+      return `<button class="cat-chip ${c===activeCategory?'active':''}" onclick="setCategory('${escForInlineJs(c)}')" aria-pressed="${c===activeCategory}">${c}</button>`;
+    }
+    return `
+      <button class="cat-pick-card ${c===activeCategory?'active':''}" onclick="setCategory('${escForInlineJs(c)}')" aria-pressed="${c===activeCategory}" aria-label="Shop ${c}">
+        <img src="${img}" alt="${c}" loading="lazy">
+        <div class="cat-pick-overlay"><span class="cat-pick-label">${c}</span></div>
+      </button>`;
+  }).join("");
+}
+
+// Welcome Page ("Home") shows the Offers + Men's/Women's cards, with the
+// search/filters/grid completely hidden. Any entry point - Men's,
+// Women's, an Offers tier, Discounts, or All Products - flips
+// onWelcomePage to false and this swaps to the products view instead.
+// Also keeps the secondary nav's active-state highlight in sync.
 function updateGenderHeroVisibility(){
   const hero = document.getElementById("genderHero");
-  if(!hero) return;
-  hero.style.display = (activeGender === null && activeFilter === "all" && searchTerm === "") ? "grid" : "none";
+  const products = document.getElementById("productsView");
+  if(hero) hero.style.display = onWelcomePage ? "" : "none";
+  if(products) products.style.display = onWelcomePage ? "none" : "";
+
+  updateSecondaryNavActiveOnly();
+  updatePageChrome();
+  syncViewHash();
 }
+
+// Nav active-state highlighting + the Back button's visibility, shared
+// between the main Welcome/Products toggle above and the Size Chart/
+// Policies open/close paths below (those don't touch genderHero/
+// productsView at all, but still need the same nav highlighting).
+function updateSecondaryNavActiveOnly(){
+  const suppressActive = currentFullPage !== null || itemDetailShoeId !== null;
+  const navHome = document.getElementById("navHomeBtn");
+  const navAll = document.getElementById("navAllBtn");
+  const navMens = document.getElementById("navMensBtn");
+  const navWomens = document.getElementById("navWomensBtn");
+  const navPremium = document.getElementById("navPremiumBtn");
+  const navOffers = document.getElementById("navOffersBtn");
+  const navBack = document.getElementById("navBackBtn");
+
+  if(navHome) navHome.classList.toggle("active", onWelcomePage && !suppressActive);
+  if(navAll) navAll.classList.toggle("active", !suppressActive && !onWelcomePage && activeGender === null && activeFilter === "all");
+  if(navMens) navMens.classList.toggle("active", !suppressActive && !onWelcomePage && activeGender === "M");
+  if(navWomens) navWomens.classList.toggle("active", !suppressActive && !onWelcomePage && activeGender === "W");
+  if(navPremium) navPremium.classList.toggle("active", !suppressActive && !onWelcomePage && activeFilter === "premium3000");
+  if(navOffers) navOffers.classList.toggle("active", !suppressActive && !onWelcomePage && ["under1000","under1500","under2000"].includes(activeFilter));
+  if(navBack) navBack.style.display = (onWelcomePage && !suppressActive) ? "none" : "";
+}
+
+// Sets the dedicated-page heading text and shows the small Men's/Women's
+// tiles only on the true "All Products" state (per the F2 spec) - not on
+// Men's/Women's/Offers/Discounts, where they'd just duplicate the nav.
+function updatePageChrome(){
+  const heading = document.getElementById("pageHeading");
+  const tiles = document.getElementById("apGenderTiles");
+  const offersTierStrip = document.getElementById("offersTierStrip");
+  if(onWelcomePage){
+    if(heading) heading.style.display = "none";
+    if(tiles) tiles.style.display = "none";
+    if(offersTierStrip){ offersTierStrip.style.display = "none"; offersTierStrip.innerHTML = ""; }
+    renderBreadcrumb();
+    return;
+  }
+  const isPlainAllProducts = activeGender === null && activeFilter === "all";
+  const isOffersTier = ["under1000", "under1500", "under2000"].includes(activeFilter);
+  let label = "All Products";
+  if(activeGender === "M") label = "Men's Footwear";
+  else if(activeGender === "W") label = "Women's Footwear";
+  else if(activeFilter === "premium3000") label = "Premium Shoes";
+  else if(activeFilter === "under1000") label = "Under ₹1,000";
+  else if(activeFilter === "under1500") label = "Under ₹1,500";
+  else if(activeFilter === "under2000") label = "Under ₹2,000";
+
+  if(heading){ heading.textContent = label; heading.style.display = ""; }
+  if(tiles) tiles.style.display = isPlainAllProducts ? "grid" : "none";
+  renderOffersTierStrip(offersTierStrip, isOffersTier);
+  renderBreadcrumb();
+}
+
+// The 3 Offers tiers as a compact, horizontally-scrollable picker at the
+// top of the Offers grid page itself - tapping one switches tier without
+// leaving the page. Only rendered/visible while actually on an Offers
+// tier (not Men's/Women's/Premium/All Products).
+function renderOffersTierStrip(el, isOffersTier){
+  if(!el) return;
+  if(!isOffersTier){
+    el.style.display = "none";
+    el.innerHTML = "";
+    return;
+  }
+  const tiers = [
+    { key:"under1000", cls:"offer-1000", img:"images/hero-sale.jpg", label:"Get a pair<br>under &#8377;1,000" },
+    { key:"under1500", cls:"offer-1500", img:"images/hero-new-arrivals.jpg", label:"Get a pair<br>under &#8377;1,500" },
+    { key:"under2000", cls:"offer-2000", img:"images/hero-under2000.jpg", label:"Get a pair<br>under &#8377;2,000" },
+  ];
+  el.style.display = "flex";
+  el.innerHTML = tiers.map(t => `
+    <button class="offer-card offer-card-compact ${t.cls} ${activeFilter===t.key?'active':''}" onclick="selectPriceTierHero('${t.key}')" aria-pressed="${activeFilter===t.key}">
+      <img class="offer-card-img" src="${t.img}" alt="" onerror="this.remove()">
+      <span class="offer-card-label">${t.label}</span>
+    </button>
+  `).join("");
+}
+
+// "Home > Section > Category" trail - mirrors whatever updatePageChrome()
+// just decided the page heading/section is, then optionally adds the
+// active category as a final, non-clickable segment (a category is
+// current-page context here too, same reasoning as the page heading).
+// Every segment except the last is clickable. Hidden entirely on the
+// Welcome Page (nothing to trail back through) and on product detail/
+// cart/checkout (those keep their own back behavior, same as the nav).
+// Builds the "Home > Section > Category" segments for whichever section
+// is currently active (gender, an Offers tier, Premium, or plain All
+// Products) plus the category if one's picked. Shared by the product
+// listing pages and the product detail page below - activeGender/
+// activeFilter/activeCategory aren't touched by opening a product, so
+// reusing this here means the product detail breadcrumb naturally
+// remembers exactly which section it was opened from (e.g. "Home >
+// Men's > Product Name") instead of collapsing straight to Home.
+function buildSectionBreadcrumbSegs(){
+  const segs = [{ label:"Home", onclick:"goHome()" }];
+  if(activeGender === "M"){
+    segs.push({ label:"Men's", onclick:"selectGenderCategory('mens')" });
+  } else if(activeGender === "W"){
+    segs.push({ label:"Women's", onclick:"selectGenderCategory('womens')" });
+  } else if(activeFilter === "premium3000"){
+    segs.push({ label:"Premium Shoes", onclick:"selectPriceTierHero('premium3000')" });
+  } else if(activeFilter === "under1000" || activeFilter === "under1500" || activeFilter === "under2000"){
+    segs.push({ label:"Offers", onclick:"goToOffers()" });
+    segs.push({ label: QUICK_FILTER_LABELS[activeFilter], onclick:`selectPriceTierHero('${activeFilter}')` });
+  } else {
+    segs.push({ label:"All Products", onclick:"showAllProducts()" });
+  }
+  if(activeCategory !== "All") segs.push({ label: activeCategory, onclick: null });
+  return segs;
+}
+
+function renderBreadcrumb(){
+  const nav = document.getElementById("breadcrumbNav");
+  if(!nav) return;
+
+  let segs = [];
+  if(itemDetailShoeId !== null){
+    const shoe = SHOES.find(s => s.id === itemDetailShoeId);
+    segs = buildSectionBreadcrumbSegs();
+    segs.push({ label: shoe ? shoe.name : "Product", onclick: null });
+  } else if(currentFullPage === "size-guide"){
+    segs.push({ label:"Home", onclick:"goHome()" });
+    segs.push({ label:"Size Chart" });
+  } else if(currentFullPage === "policies"){
+    segs.push({ label:"Home", onclick:"goHome()" });
+    segs.push({ label:"Terms & Policy" });
+  } else if(!onWelcomePage){
+    segs = buildSectionBreadcrumbSegs();
+  }
+
+  if(segs.length < 2){
+    nav.innerHTML = "";
+    nav.style.display = "none";
+    syncHeaderHeightVar();
+    return;
+  }
+
+  nav.style.display = "";
+  nav.innerHTML = segs.map((s, i) => {
+    const isLast = i === segs.length - 1;
+    const piece = (isLast || !s.onclick)
+      ? `<span class="breadcrumb-current">${escapeHtml(s.label)}</span>`
+      : `<button class="breadcrumb-link" onclick="${s.onclick}">${escapeHtml(s.label)}</button>`;
+    return i === 0 ? piece : `<span class="breadcrumb-sep" aria-hidden="true">›</span>${piece}`;
+  }).join("");
+  syncHeaderHeightVar(); // breadcrumb height can change with content - keep --breadcrumb-h honest
+}
+
+// Scrolls straight to the Offers section on the Welcome Page. If we're
+// currently in the products view, goes Home first so the section exists
+// on screen to scroll to.
+// Entry point for the Offers nav/hamburger link - goes straight to the
+// dedicated Offers grid page (tier picker + category picker, same
+// pattern as Premium Shoes/All Products), defaulting to the broadest
+// tier. This is a real destination now, not a scroll-to on the Welcome
+// Page - use the 3 cards in the Welcome Page's own Offers section if you
+// want to jump to a specific tier from there instead.
+function goToOffers(){
+  selectPriceTierHero("under2000");
+}
+
+// ---------- Dedicated-view URL routing (Men's/Women's/Offers/Discounts/
+// All Products) ----------
+// Same spirit as the Size Guide/Policies pushState pattern below: each
+// dedicated view gets its own hash so it's shareable and the browser/
+// device Back button works. Entering a dedicated view from Home pushes a
+// new history entry (so Back returns to Home); moving laterally between
+// dedicated views - or back to Home - replaces instead, so Back never
+// lands on an orphaned intermediate state.
+function viewKeyAndHash(){
+  if(onWelcomePage) return { key: null, hash: "" };
+  if(activeGender === "M") return { key: "mens", hash: "#mens" };
+  if(activeGender === "W") return { key: "womens", hash: "#womens" };
+  if(activeFilter === "sale") return { key: "discounts", hash: "#discounts" };
+  if(activeFilter === "premium3000") return { key: "premium", hash: "#premium" };
+  if(activeFilter === "new") return { key: "new", hash: "#new-arrivals" };
+  if(activeFilter === "under1000") return { key: "offers1000", hash: "#offers-1000" };
+  if(activeFilter === "under1500") return { key: "offers1500", hash: "#offers-1500" };
+  if(activeFilter === "under2000") return { key: "offers2000", hash: "#offers-2000" };
+  return { key: "all", hash: "#all-products" };
+}
+
+function syncViewHash(){
+  // Never fight product-detail or Size Guide/Policies hash routing -
+  // those own the hash while they're open.
+  if(itemDetailShoeId !== null || currentFullPage) return;
+  const { key, hash } = viewKeyAndHash();
+  if(key === currentDedicatedView) return;
+  if(!suppressViewHashPush){
+    const url = location.pathname + location.search + hash;
+    if(currentDedicatedView === null && key !== null){
+      history.pushState({ view: key }, "", url);
+    } else {
+      history.replaceState({ view: key }, "", url);
+    }
+  }
+  currentDedicatedView = key;
+}
+
+// Applies a dedicated view directly from location.hash - used both for a
+// shared/bookmarked link on first load, and for the device Back button
+// via popstate. suppressViewHashPush avoids re-pushing a history entry
+// for a URL that's already correct.
+function applyViewFromHash(hash){
+  suppressViewHashPush = true;
+  if(hash === "#mens") selectGenderCategory("mens");
+  else if(hash === "#womens") selectGenderCategory("womens");
+  else if(hash === "#discounts") selectPriceTierHero("sale");
+  else if(hash === "#premium") selectPriceTierHero("premium3000");
+  else if(hash === "#new-arrivals") selectPriceTierHero("new");
+  else if(hash === "#offers-1000") selectPriceTierHero("under1000");
+  else if(hash === "#offers-1500") selectPriceTierHero("under1500");
+  else if(hash === "#offers-2000") selectPriceTierHero("under2000");
+  else if(hash === "#all-products") showAllProducts();
+  else goHome();
+  suppressViewHashPush = false;
+  currentDedicatedView = viewKeyAndHash().key;
+}
+
+window.addEventListener("popstate", () => {
+  const hash = location.hash;
+  if(/^#shoe-\d+$/.test(hash) || hash === "#size-guide" || hash === "#policies" || currentFullPage) return;
+  applyViewFromHash(hash);
+});
 
 function setCategory(c){
   activeCategory = c;
-  visibleCount = PAGE_SIZE;
+  currentPage = 1;
   renderCategories(); renderFilterSheet(); renderSelectedFilters(); renderGrid();
+  updatePageChrome();
 }
 
 // Sizes are gender-specific (Men's EU 41-45/UK 6-10 vs Women's EU 36-40/
@@ -3018,26 +3714,27 @@ function setCategory(c){
 // Men's/Women's catalog first, exactly as the homepage cards promise.
 function setGender(g){
   closeAllOverlays();
+  onWelcomePage = false;
   activeGender = g; // "M" or "W"
   activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
   activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all";
-  visibleCount = PAGE_SIZE;
+  currentPage = 1;
   renderFilterStrip(); renderCategories(); renderFilterSheet(); renderSelectedFilters(); renderGrid();
   updateGenderHeroVisibility();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 // Entry point for the two large homepage cards, and for the "Men's
 // Footwear"/"Women's Footwear" links in the hamburger menu.
 function selectGenderCategory(gender){
   setGender(gender === "womens" ? "W" : "M");
-  document.getElementById("grid").scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
 // Drops back to the unisex "All" view without touching type/brand/size
 // filters - the exit action on the "Men's/Women's Footwear" chip.
 function clearGenderFilter(){
   activeGender = null;
-  visibleCount = PAGE_SIZE;
+  currentPage = 1;
   renderFilterSheet(); renderSelectedFilters(); renderGrid();
   updateGenderHeroVisibility();
 }
@@ -3046,7 +3743,7 @@ let searchRenderTimer = null;
 let searchTrackTimer = null;
 function onSearch(){
   searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
-  visibleCount = PAGE_SIZE;
+  currentPage = 1;
 
   // Debounced: rebuilding the whole grid (up to 12 full card templates,
   // each with an image) on every single keystroke causes visible jank on
@@ -3084,7 +3781,7 @@ function getSizeRangesForCategory(){
   return SIZE_RANGES[activeGender] || SIZE_RANGES.default;
 }
 
-function setType(t){ activeType = t; visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function setType(t){ activeType = t; currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
 
 // Brand/Model are multi-select: toggling "All" clears the set, toggling a
 // specific value adds/removes just that one, leaving the others intact.
@@ -3092,14 +3789,14 @@ function toggleSetFilter(setRef, value){
   if(value === "All"){ setRef.clear(); return; }
   if(setRef.has(value)) setRef.delete(value); else setRef.add(value);
 }
-function setBrand(b){ toggleSetFilter(activeBrands, b); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
-function setModel(m){ toggleSetFilter(activeModels, m); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
-function removeBrand(b){ activeBrands.delete(b); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
-function removeModel(m){ activeModels.delete(m); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
-function setAvailFilter(key){ toggleSetFilter(activeAvailFilters, key); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
-function removeAvailFilter(key){ activeAvailFilters.delete(key); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
-function setQualityFilter(key){ toggleSetFilter(activeQualities, key); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
-function removeQualityFilter(key){ activeQualities.delete(key); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function setBrand(b){ toggleSetFilter(activeBrands, b); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function setModel(m){ toggleSetFilter(activeModels, m); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function removeBrand(b){ activeBrands.delete(b); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function removeModel(m){ activeModels.delete(m); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function setAvailFilter(key){ toggleSetFilter(activeAvailFilters, key); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function removeAvailFilter(key){ activeAvailFilters.delete(key); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function setQualityFilter(key){ toggleSetFilter(activeQualities, key); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function removeQualityFilter(key){ activeQualities.delete(key); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
 
 // ---------- Filter panel: collapsible accordion sections ----------
 // All sections start collapsed (just headings visible) per the compact,
@@ -3157,10 +3854,10 @@ function setSizeFilter(sz){
     const num = Number(sz);
     if(activeSizes.has(num)) activeSizes.delete(num); else activeSizes.add(num);
   }
-  visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid();
+  currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid();
 }
-function removeSize(sz){ activeSizes.delete(Number(sz)); visibleCount = PAGE_SIZE; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
-function setSort(mode){ activeSort = mode; visibleCount = PAGE_SIZE; renderFilterStrip(); renderFilterSheet(); renderSelectedFilters(); renderGrid(); trackEvent('select_sort', { sort_value: mode }); }
+function removeSize(sz){ activeSizes.delete(Number(sz)); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
+function setSort(mode){ activeSort = mode; currentPage = 1; renderFilterStrip(); renderFilterSheet(); renderSelectedFilters(); renderGrid(); trackEvent('select_sort', { sort_value: mode }); }
 
 function onPriceSliderChange(){
   let min = Number(document.getElementById("priceMinSlider").value);
@@ -3170,7 +3867,7 @@ function onPriceSliderChange(){
   priceMax = max;
   document.getElementById("priceMinLabel").textContent = `₹${min.toLocaleString("en-IN")}`;
   document.getElementById("priceMaxLabel").textContent = `₹${max.toLocaleString("en-IN")}`;
-  visibleCount = PAGE_SIZE;
+  currentPage = 1;
   updateFilterBadge();
   renderSelectedFilters();
   renderGrid();
@@ -3180,7 +3877,7 @@ function clearAllFilters(){
   activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
   activeGender = null;
   priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all";
-  visibleCount = PAGE_SIZE;
+  currentPage = 1;
   document.getElementById("priceMinSlider").value = 0;
   document.getElementById("priceMaxSlider").value = 10000;
   document.getElementById("priceMinLabel").textContent = "₹0";
@@ -3207,6 +3904,7 @@ function closeAllOverlays(){
   closeItemDetail();
   closeHamburger();
   closeLightbox();
+  closeSaved();
   closeSheet("cartOverlay");
   closeSheet("checkoutOverlay");
   closeSheet("filterOverlay");
@@ -3232,13 +3930,40 @@ function closeAllOverlays(){
 
 function goHome(){
   closeAllOverlays();
+  onWelcomePage = true;
   searchTerm = "";
   const searchInput = document.getElementById("searchInput");
   if(searchInput) searchInput.value = "";
   activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
   activeGender = null;
   priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all"; activeSort = "latest";
-  visibleCount = PAGE_SIZE;
+  currentPage = 1;
+  document.getElementById("priceMinSlider").value = 0;
+  document.getElementById("priceMaxSlider").value = 10000;
+  document.getElementById("priceMinLabel").textContent = "₹0";
+  document.getElementById("priceMaxLabel").textContent = "₹10,000";
+  renderFilterStrip(); renderCategories(); renderFilterSheet(); renderSelectedFilters(); renderGrid();
+  updateGenderHeroVisibility();
+  if(location.hash) history.replaceState(null, "", location.pathname + location.search);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// "All Products" - the dedicated products/grid page. Full reset like
+// goHome() (clears gender/filters/search back to defaults), but leaves
+// the Welcome Page and lands on the grid, with Men's/Women's tiles above
+// it. An optional presetCategory is used by the hamburger's Shop
+// category links (e.g. "Boots") to land directly on that category
+// instead of the unfiltered grid.
+function showAllProducts(presetCategory){
+  closeAllOverlays();
+  onWelcomePage = false;
+  searchTerm = "";
+  const searchInput = document.getElementById("searchInput");
+  if(searchInput) searchInput.value = "";
+  activeCategory = presetCategory || "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
+  activeGender = null;
+  priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all"; activeSort = "latest";
+  currentPage = 1;
   document.getElementById("priceMinSlider").value = 0;
   document.getElementById("priceMaxSlider").value = 10000;
   document.getElementById("priceMinLabel").textContent = "₹0";
@@ -3261,7 +3986,7 @@ function updateFilterBadge(){
 // Shows every active filter (brand, model, type, size, sort, price) as a
 // removable chip so the shopper can see everything that's narrowing the
 // grid at a glance and clear any one of them individually.
-const SORT_LABELS = { latest:"Newest", az:"Names: A-Z", price_low:"Price: Low to High", price_high:"Price: High to Low" };
+const SORT_LABELS = { latest:"Default", newest:"Newest", az:"Names: A-Z", price_high:"Price: High to Low", price_low:"Price: Low to High" };
 // Single source of truth for the 4 sort options (key -> label). Both the
 // full Filters sheet and the standalone Sort sheet read from this, so the
 // wording can never drift out of sync between the two places it's shown.
@@ -3270,8 +3995,11 @@ function renderSelectedFilters(){
   const row = document.getElementById("selectedFiltersRow");
   if(!row) return;
   const chips = [];
-  if(activeGender) chips.push({ label: activeGender === "M" ? "Men's Footwear" : "Women's Footwear", onclick:`clearGenderFilter()` });
-  if(activeFilter !== "all") chips.push({ label: QUICK_FILTER_LABELS[activeFilter] || activeFilter, onclick:`setFilter('all')` });
+  // Gender (Men's/Women's) and the hero-only filters (Offers tiers,
+  // Premium Shoes) are page-level context now - shown via the page
+  // heading and highlighted in the secondary nav - not a removable
+  // filter chip. Showing them here too was confusing since "removing"
+  // one didn't actually leave the page it named.
   if(activeType !== "All") chips.push({ label:`Type: ${activeType}`, onclick:`setType('All')` });
   activeBrands.forEach(b => chips.push({ label:b, onclick:`removeBrand('${escForInlineJs(b)}')` }));
   activeModels.forEach(m => chips.push({ label:m, onclick:`removeModel('${escForInlineJs(m)}')` }));
@@ -3290,7 +4018,7 @@ function renderSelectedFilters(){
   ).join("") + `<button class="selected-filters-clear" onclick="clearAllFilters()">Clear all</button>`;
 }
 function resetPriceFilter(){
-  priceMin = 0; priceMax = 10000; visibleCount = PAGE_SIZE;
+  priceMin = 0; priceMax = 10000; currentPage = 1;
   document.getElementById("priceMinSlider").value = 0;
   document.getElementById("priceMaxSlider").value = 10000;
   document.getElementById("priceMinLabel").textContent = "₹0";
@@ -3421,6 +4149,8 @@ function getFilteredShoes(){
     if(activeModels.size > 0 && !activeModels.has(detectModel(shoe.name))) return false;
     if(activeFilter === "new" && !shoe.isNew) return false;
     if(activeFilter === "sale" && !shoe.isSale) return false;
+    if(activeFilter === "under1000" && shoe.price >= 1000) return false;
+    if(activeFilter === "under1500" && shoe.price >= 1500) return false;
     if(activeFilter === "under2000" && shoe.price >= 2000) return false;
     if(activeFilter === "premium3000" && shoe.price < 2750) return false;
     if(priceMin > 0 || priceMax < 10000){
@@ -3439,24 +4169,54 @@ function getFilteredShoes(){
     if(activeSort === "price_low") return a.price - b.price;
     if(activeSort === "price_high") return b.price - a.price;
     if(activeSort === "az") return a.name.localeCompare(b.name);
+    if(activeSort === "newest") return b.order - a.order; // pure recency, no priority boost - see "Default" below for that
+    // Default ("latest"): Website_Listed=2 items surface first as a group
+    // (still ordered by recency within that group), then everything else
+    // by recency - "1" items are never hidden, "2" just gets priority
+    // placement on top.
+    if(a.listedPriority !== b.listedPriority) return b.listedPriority - a.listedPriority;
     return b.order - a.order; // latest-added first: later sheet rows = newer products
   });
 }
 
-function renderShowMore(totalCount){
-  const wrap = document.getElementById("showMoreWrap");
+function renderPagination(totalCount){
+  const wrap = document.getElementById("paginationWrap");
   if(!wrap) return;
-  if(visibleCount < totalCount){
-    const remaining = totalCount - visibleCount;
-    wrap.innerHTML = `<button class="show-more-btn" onclick="showMoreItems()">Show More (${remaining} more)</button>`;
-  } else {
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  if(totalPages <= 1){
     wrap.innerHTML = "";
+    return;
   }
+  if(currentPage > totalPages) currentPage = totalPages;
+
+  // Windowed page numbers (current ± 2) with an ellipsis, so a catalog
+  // with dozens of pages doesn't render dozens of number buttons - always
+  // shows page 1 and the last page as anchors.
+  const windowSize = 2;
+  const pages = [];
+  pages.push(1);
+  for(let p = currentPage - windowSize; p <= currentPage + windowSize; p++){
+    if(p > 1 && p < totalPages) pages.push(p);
+  }
+  if(totalPages > 1) pages.push(totalPages);
+  const uniquePages = [...new Set(pages)].sort((a,b) => a - b);
+
+  let html = `<button class="page-arrow" ${currentPage===1?'disabled':''} onclick="goToPage(${currentPage-1})" aria-label="Previous page">&lsaquo;</button>`;
+  let prev = 0;
+  uniquePages.forEach(p => {
+    if(p - prev > 1) html += `<span class="page-num ellipsis" aria-hidden="true">…</span>`;
+    html += `<button class="page-num ${p===currentPage?'active':''}" onclick="goToPage(${p})" aria-label="Page ${p}" aria-current="${p===currentPage}">${p}</button>`;
+    prev = p;
+  });
+  html += `<button class="page-arrow" ${currentPage===totalPages?'disabled':''} onclick="goToPage(${currentPage+1})" aria-label="Next page">&rsaquo;</button>`;
+  wrap.innerHTML = html;
 }
 
-function showMoreItems(){
-  visibleCount += PAGE_SIZE;
+function goToPage(p){
+  if(p < 1 || p === currentPage) return;
+  currentPage = p;
   renderGrid();
+  document.getElementById("grid").scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
 // Warms the browser's cache for the *next* "Show More" batch - so when the
@@ -3474,10 +4234,11 @@ function shouldSkipPreload(){
   return !!(conn && (conn.saveData || conn.effectiveType === "2g" || conn.effectiveType === "slow-2g"));
 }
 
-function preloadNextBatchImages(fullList, count){
+function preloadNextBatchImages(fullList, page){
   if(shouldSkipPreload()) return;
 
-  const nextBatch = fullList.slice(count, count + PAGE_SIZE);
+  const nextStart = page * PAGE_SIZE;
+  const nextBatch = fullList.slice(nextStart, nextStart + PAGE_SIZE);
   nextBatch.forEach(shoe => {
     const src = shoe.images[0];
     if(!src) return;
@@ -3511,11 +4272,12 @@ function renderGrid(){
 
   if(fullList.length === 0){
     grid.innerHTML = `<div class="grid-empty"><span class="emoji" aria-hidden="true">🔎</span>No shoes match your search.</div>`;
-    renderShowMore(0);
+    renderPagination(0);
     return;
   }
 
-  const list = fullList.slice(0, visibleCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const list = fullList.slice(pageStart, pageStart + PAGE_SIZE);
 
   // First 10 cards load their image immediately (not gated behind native
   // lazy-loading's scroll-into-view trigger) - mainly so a customer
@@ -3531,7 +4293,7 @@ function renderGrid(){
     const tags = [];
     if(shoe.soldOutAll) tags.push('<span class="tag sold">SOLD OUT</span>');
     if(hasDiscount) tags.push(`<span class="tag sale">${discountPct}% OFF</span>`);
-    else if(shoe.isSale) tags.push('<span class="tag sale">SALE</span>');
+    else if(shoe.isSale) tags.push('<span class="tag sale">DISCOUNT</span>');
     if(shoe.isNew) tags.push('<span class="tag new">NEW</span>');
 
     const imgLoading = i < EAGER_IMAGE_COUNT ? "eager" : "lazy";
@@ -3546,7 +4308,14 @@ function renderGrid(){
           ${shoe.images.length > 1 ? `<div class="photo-count">📷 ${shoe.images.length}</div>` : ''}
         </div>
         <div class="body">
-          <div class="brand">${escapeHtml(shoe.brand)}</div>
+          <div class="brand-row">
+            <div class="brand">${escapeHtml(shoe.brand)}</div>
+            <button class="heart-toggle-btn ${savedIds.includes(shoe.id) ? 'active' : ''}" id="heartBtnGrid-${shoe.id}"
+              onclick="event.stopPropagation(); toggleSaved(${shoe.id})"
+              aria-label="${savedIds.includes(shoe.id) ? 'Remove from saved' : 'Save for comparison'}" aria-pressed="${savedIds.includes(shoe.id)}">
+              <span aria-hidden="true">${heartGlyph(savedIds.includes(shoe.id))}</span>
+            </button>
+          </div>
           <div class="name">${escapeHtml(shoe.name)}</div>
           <div class="price-row">
             <span class="price-now">₹${shoe.price}</span>
@@ -3557,14 +4326,14 @@ function renderGrid(){
     `;
   }).join("");
 
-  renderShowMore(fullList.length);
+  renderPagination(fullList.length);
 
   // Debounced so rapid actions (typing in search, tapping filters) don't
   // fire off a burst of preloads for batches that get discarded a moment
-  // later - only the settled, final "next batch" actually gets fetched.
+  // later - only the settled, final "next page" actually gets fetched.
   clearTimeout(preloadNextBatchTimer);
   preloadNextBatchTimer = setTimeout(() => {
-    preloadNextBatchImages(fullList, visibleCount);
+    preloadNextBatchImages(fullList, currentPage);
   }, 300);
 }
 
@@ -3625,6 +4394,14 @@ function showFullPage(pageKey, elId, hash){
   document.getElementById("sizeGuidePage")?.classList.remove("open");
   document.getElementById("policiesPage")?.classList.remove("open");
   document.getElementById(elId)?.classList.add("open");
+  // Previously left in whatever display state they were already in -
+  // the fixed overlay visually covered them, but any 1px misalignment
+  // (rounding in the top:calc(), a border-bottom, etc.) let a sliver of
+  // the grid page's chrome show through underneath. Hiding them outright
+  // removes that possibility entirely instead of relying on the overlay
+  // to paint perfectly over live content.
+  document.getElementById("genderHero").style.display = "none";
+  document.getElementById("productsView").style.display = "none";
   updateBodyScrollLock();
   document.getElementById(elId)?.scrollTo?.(0, 0);
   const scrollArea = document.querySelector(`#${elId} .item-detail-scroll`);
@@ -3641,6 +4418,8 @@ function showFullPage(pageKey, elId, hash){
   }
   currentFullPage = pageKey;
   syncBackgroundInertState();
+  renderBreadcrumb();
+  updateSecondaryNavActiveOnly();
 }
 
 function closeCurrentFullPage(){
@@ -3649,6 +4428,7 @@ function closeCurrentFullPage(){
   currentFullPage = null;
   updateBodyScrollLock();
   syncBackgroundInertState();
+  updateGenderHeroVisibility(); // restores genderHero/productsView to whatever onWelcomePage says it should be
 }
 
 window.addEventListener("popstate", () => {
@@ -3658,17 +4438,25 @@ window.addEventListener("popstate", () => {
       renderSizeChartContent();
       document.getElementById("sizeGuidePage")?.classList.add("open");
       document.getElementById("policiesPage")?.classList.remove("open");
+      document.getElementById("genderHero").style.display = "none";
+      document.getElementById("productsView").style.display = "none";
       currentFullPage = "size-guide";
       updateBodyScrollLock();
       syncBackgroundInertState();
+      renderBreadcrumb();
+      updateSecondaryNavActiveOnly();
     }
   } else if(hash === "#policies"){
     if(currentFullPage !== "policies"){
       document.getElementById("policiesPage")?.classList.add("open");
       document.getElementById("sizeGuidePage")?.classList.remove("open");
+      document.getElementById("genderHero").style.display = "none";
+      document.getElementById("productsView").style.display = "none";
       currentFullPage = "policies";
       updateBodyScrollLock();
       syncBackgroundInertState();
+      renderBreadcrumb();
+      updateSecondaryNavActiveOnly();
     }
   } else if(currentFullPage){
     closeCurrentFullPage();
@@ -3680,14 +4468,22 @@ window.addEventListener("popstate", () => {
 if(location.hash === "#size-guide"){
   renderSizeChartContent();
   document.getElementById("sizeGuidePage")?.classList.add("open");
+  document.getElementById("genderHero").style.display = "none";
+  document.getElementById("productsView").style.display = "none";
   currentFullPage = "size-guide";
   updateBodyScrollLock();
   syncBackgroundInertState();
+  renderBreadcrumb();
+  updateSecondaryNavActiveOnly();
 } else if(location.hash === "#policies"){
   document.getElementById("policiesPage")?.classList.add("open");
+  document.getElementById("genderHero").style.display = "none";
+  document.getElementById("productsView").style.display = "none";
   currentFullPage = "policies";
   updateBodyScrollLock();
   syncBackgroundInertState();
+  renderBreadcrumb();
+  updateSecondaryNavActiveOnly();
 }
 
 // Clicking a product inside the Cart opens its Item Description Page the
@@ -3705,8 +4501,12 @@ function openItemDetail(shoeId){
   itemDetailPhotoIndex = 0;
   renderItemDetail();
   document.getElementById("itemDetailOverlay").classList.add("open");
+  document.getElementById("genderHero").style.display = "none";
+  document.getElementById("productsView").style.display = "none";
   updateBodyScrollLock();
   syncBackgroundInertState();
+  renderBreadcrumb();
+  updateSecondaryNavActiveOnly();
   trackEvent('view_item', { item_id: shoe.id, item_name: shoe.name, item_brand: shoe.brand, price: shoe.price });
   // Keep the URL in sync so this exact product can always be re-opened
   // (bookmarked, shared, or reached via a WhatsApp order link) straight
@@ -3718,9 +4518,10 @@ function openItemDetail(shoeId){
 function closeItemDetail(){
   const el = document.getElementById("itemDetailOverlay");
   if(el) el.classList.remove("open");
-  updateBodyScrollLock();
   itemDetailShoeId = null;
+  updateBodyScrollLock();
   syncBackgroundInertState();
+  updateGenderHeroVisibility(); // restores genderHero/productsView, nav highlighting, and the breadcrumb together
   suppressHashRoute = true;
   history.replaceState(null, "", location.pathname + location.search);
 }
@@ -3753,14 +4554,17 @@ function renderItemDetail(){
   const photoCount = shoe.images.length;
   const hasMultiplePhotos = photoCount > 1;
   // If this shoe is already sitting in the cart (e.g. the customer tapped
-  // a cart line to come back here), show View Cart right away instead of
-  // only after a fresh Add to Cart tap in this same visit.
-  const alreadyInCart = cart.some(item => item.shoeId === shoe.id);
+  // a cart line to come back here), show View Cart and the in-cart status
+  // line right away instead of only after a fresh Add to Cart tap in this
+  // same visit. Kept as the full list of lines (not just a boolean) since
+  // the same shoe can be in the cart under more than one size.
+  const cartLinesForShoe = cart.filter(item => item.shoeId === shoe.id);
+  const alreadyInCart = cartLinesForShoe.length > 0;
 
   const tags = [];
   if(shoe.soldOutAll) tags.push('<span class="tag sold">SOLD OUT</span>');
   if(hasDiscount) tags.push(`<span class="tag sale">${discountPct}% OFF</span>`);
-  else if(shoe.isSale) tags.push('<span class="tag sale">SALE</span>');
+  else if(shoe.isSale) tags.push('<span class="tag sale">DISCOUNT</span>');
   if(shoe.isNew) tags.push('<span class="tag new">NEW</span>');
 
   const sizeButtons = sizeOptions.map(sz => {
@@ -3788,7 +4592,14 @@ function renderItemDetail(){
     <div class="item-detail-info">
       <div class="item-detail-meta-row">
         <div class="brand">${escapeHtml(shoe.brand)}</div>
-        <div class="item-detail-tags-inline">${tags.join("")}</div>
+        <div class="item-detail-right-group">
+          <div class="item-detail-tags-inline">${tags.join("")}</div>
+          <button class="heart-toggle-btn ${savedIds.includes(shoe.id) ? 'active' : ''}" id="heartBtnDetail-${shoe.id}"
+            onclick="toggleSaved(${shoe.id})"
+            aria-label="${savedIds.includes(shoe.id) ? 'Remove from saved' : 'Save for comparison'}" aria-pressed="${savedIds.includes(shoe.id)}">
+            <span aria-hidden="true">${heartGlyph(savedIds.includes(shoe.id))}</span>
+          </button>
+        </div>
       </div>
       <div class="item-detail-name">${escapeHtml(shoe.name)}</div>
       <div class="price-row">
@@ -3805,6 +4616,10 @@ function renderItemDetail(){
         <button class="qty-btn" onclick="changeQuantity(${shoe.id}, -1)" aria-label="Decrease quantity" ${quantity<=1 ? 'disabled' : ''}>−</button>
         <span class="qty-value" id="qtyValue-${shoe.id}">${quantity}</span>
         <button class="qty-btn" onclick="changeQuantity(${shoe.id}, 1)" aria-label="Increase quantity" ${quantity>=10 ? 'disabled' : ''}>+</button>
+      </div>
+
+      <div class="in-cart-label ${alreadyInCart ? 'show' : ''}" id="inCartLabel-${shoe.id}" aria-live="polite">
+        <span aria-hidden="true">✓</span><span class="in-cart-label-text">${alreadyInCart ? `Already in your cart · ${escapeHtml(cartSummaryText(cartLinesForShoe))}` : ''}</span>
       </div>
 
       <button class="add-btn" id="addBtn-${shoe.id}" onclick="addToCart(${shoe.id})" ${allSoldOut ? 'disabled' : ''}>
@@ -3924,12 +4739,314 @@ function addToCart(shoeId){
 // entirely. Reads the live `cart` array fresh every time rather than any
 // cached/stale flag, and only touches the DOM if that shoe's detail view
 // is the one currently open (itemDetailShoeId) - a no-op otherwise.
+// A shoe can be in the cart under more than one size (e.g. one pair each
+// in EU 42 and EU 43) - this summarizes every line for that shoe into one
+// readable string rather than only ever reflecting the most recent add.
+function cartSummaryText(linesForShoe){
+  if(linesForShoe.length === 1) return `Size ${linesForShoe[0].size} · Qty ${linesForShoe[0].qty}`;
+  return linesForShoe.map(l => `Size ${l.size} (Qty ${l.qty})`).join(", ");
+}
+
 function syncItemDetailCartState(){
   if(itemDetailShoeId === null) return;
   const postAdd = document.getElementById(`postAdd-${itemDetailShoeId}`);
-  if(!postAdd) return;
-  const inCart = cart.some(item => item.shoeId === itemDetailShoeId);
-  postAdd.classList.toggle("show", inCart);
+  const inCartLabel = document.getElementById(`inCartLabel-${itemDetailShoeId}`);
+  if(!postAdd && !inCartLabel) return;
+  const linesForShoe = cart.filter(item => item.shoeId === itemDetailShoeId);
+  const inCart = linesForShoe.length > 0;
+  if(postAdd) postAdd.classList.toggle("show", inCart);
+  if(inCartLabel){
+    if(inCart) inCartLabel.querySelector(".in-cart-label-text").textContent = `Already in your cart · ${cartSummaryText(linesForShoe)}`;
+    inCartLabel.classList.toggle("show", inCart);
+  }
+}
+
+// ---------- Save / Compare ----------
+function updateSavedCount(){
+  const el = document.getElementById("heartCount");
+  if(el) el.textContent = savedIds.length > 0 ? savedIds.length : "";
+}
+
+// Patches the heart icon's fill/color on every currently-rendered grid
+// card, without rebuilding the grid - same reasoning as the cart badge
+// used to have: a full re-render would restart every thumbnail's fade-in
+// for something this small.
+function updateGridSavedHearts(){
+  document.querySelectorAll('[id^="heartBtnGrid-"]').forEach(btn => {
+    const shoeId = Number(btn.id.slice("heartBtnGrid-".length));
+    const isSaved = savedIds.includes(shoeId);
+    btn.classList.toggle("active", isSaved);
+    btn.setAttribute("aria-pressed", String(isSaved));
+    btn.setAttribute("aria-label", isSaved ? "Remove from saved" : "Save for comparison");
+    const span = btn.querySelector("span");
+    if(span) span.innerHTML = heartGlyph(isSaved);
+  });
+}
+
+// Same idea as syncItemDetailCartState() - only touches the DOM if the
+// shoe whose heart just changed is the one currently open on the item
+// detail page.
+function syncItemDetailSavedState(){
+  if(itemDetailShoeId === null) return;
+  const btn = document.getElementById(`heartBtnDetail-${itemDetailShoeId}`);
+  if(!btn) return;
+  const isSaved = savedIds.includes(itemDetailShoeId);
+  btn.classList.toggle("active", isSaved);
+  btn.setAttribute("aria-pressed", String(isSaved));
+  btn.setAttribute("aria-label", isSaved ? "Remove from saved" : "Save for comparison");
+  const span = btn.querySelector("span");
+  if(span) span.innerHTML = heartGlyph(isSaved);
+}
+
+function toggleSaved(shoeId){
+  const idx = savedIds.indexOf(shoeId);
+  if(idx === -1){
+    savedIds.push(shoeId);
+  } else {
+    savedIds.splice(idx, 1);
+    compareSelection.delete(shoeId); // can't stay selected for compare once un-saved
+  }
+  saveSavedToStorage();
+  updateSavedCount();
+  updateGridSavedHearts();
+  syncItemDetailSavedState();
+  if(document.getElementById("savedOverlay")?.classList.contains("open")) renderSavedPage();
+}
+
+// Drops saved IDs that no longer exist in the live catalog (discontinued
+// products) - mirrors reconcileCartWithCatalog(), called from the same
+// place, only on a genuine live fetch (not the instant cache pass).
+function reconcileSavedWithCatalog(){
+  const before = savedIds.length;
+  savedIds = savedIds.filter(id => SHOES.some(s => s.id === id));
+  [...compareSelection].forEach(id => { if(!savedIds.includes(id)) compareSelection.delete(id); });
+  if(savedIds.length !== before){
+    saveSavedToStorage();
+    updateSavedCount();
+    updateGridSavedHearts();
+    if(document.getElementById("savedOverlay")?.classList.contains("open")) renderSavedPage();
+  }
+}
+
+function openSaved(){
+  savedViewMode = "list";
+  renderSavedPage();
+  document.getElementById("savedOverlay").classList.add("open");
+  updateBodyScrollLock();
+  syncBackgroundInertState();
+}
+
+function closeSaved(){
+  document.getElementById("savedOverlay")?.classList.remove("open");
+  updateBodyScrollLock();
+  syncBackgroundInertState();
+  savedViewMode = "list"; // fresh list view next time it's opened
+}
+
+function openSavedItemDetail(shoeId){
+  closeSaved();
+  openItemDetail(shoeId);
+}
+
+function toggleCompareSelect(shoeId, checked){
+  if(checked){
+    if(compareSelection.size >= 4){
+      // Cap at 4 - revert the checkbox the browser just ticked.
+      const cb = document.querySelector(`.saved-line[data-shoe-id="${shoeId}"] input[type="checkbox"]`);
+      if(cb) cb.checked = false;
+      showToast("Too many products to compare. You can compare up to 4 products at a time.");
+      return;
+    }
+    compareSelection.add(shoeId);
+  } else {
+    compareSelection.delete(shoeId);
+  }
+  renderSavedPage(); // re-render so the Compare button's count/enabled-state stays in sync
+}
+
+function openComparePage(){
+  if(compareSelection.size < 2) return;
+  savedViewMode = "compare";
+  renderSavedPage();
+  const scrollArea = document.querySelector("#savedOverlay .item-detail-scroll");
+  if(scrollArea) scrollArea.scrollTop = 0;
+}
+
+function backToSavedList(){
+  savedViewMode = "list";
+  renderSavedPage();
+}
+
+function renderSavedPage(){
+  const container = document.getElementById("savedContent");
+  if(!container) return;
+
+  if(savedViewMode === "compare"){
+    renderComparePage(container);
+    return;
+  }
+
+  const items = savedIds.map(id => SHOES.find(s => s.id === id)).filter(Boolean);
+
+  if(items.length === 0){
+    container.innerHTML = `<div class="item-detail-info"><div class="empty-note">Nothing saved yet. Tap the heart on any product to save it here and compare it against others later.</div></div>`;
+    return;
+  }
+
+  const rows = items.map(shoe => {
+    const checked = compareSelection.has(shoe.id);
+    return `
+      <div class="saved-line" data-shoe-id="${shoe.id}">
+        <label class="saved-check">
+          <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCompareSelect(${shoe.id}, this.checked)" aria-label="Select ${escapeHtml(shoe.name)} for comparison">
+        </label>
+        <img src="${escapeHtml(shoe.images[0])}" alt="${escapeHtml(shoe.name)}" onclick="openSavedItemDetail(${shoe.id})">
+        <div class="info" onclick="openSavedItemDetail(${shoe.id})">
+          <div class="n">${escapeHtml(shoe.name)}</div>
+          <div class="m">${escapeHtml(shoe.brand)} · ₹${shoe.price}</div>
+        </div>
+        <button class="remove" onclick="event.stopPropagation(); toggleSaved(${shoe.id})">Remove</button>
+      </div>
+    `;
+  }).join("");
+
+  const selectedCount = compareSelection.size;
+  const canCompare = selectedCount >= 2 && selectedCount <= 4;
+
+  container.innerHTML = `
+    <div class="item-detail-info">
+      <p class="policy-sub">Select 2-4 items to compare side by side</p>
+      <div id="savedLines">${rows}</div>
+      <button class="checkout-btn saved-compare-note" id="compareBtn" onclick="openComparePage()" ${canCompare ? '' : 'disabled'}>
+        Compare Selected (${selectedCount})
+      </button>
+    </div>
+  `;
+}
+
+function renderComparePage(container){
+  const compareItems = savedIds.map(id => SHOES.find(s => s.id === id)).filter(s => s && compareSelection.has(s.id));
+
+  // Shouldn't normally happen (the Compare button is disabled below 2),
+  // but guard anyway - e.g. if an item got removed elsewhere mid-view,
+  // or the last-but-one card was just removed via the × button below.
+  if(compareItems.length < 2){
+    savedViewMode = "list";
+    renderSavedPage();
+    return;
+  }
+
+  // COD is only shown at all if at least one compared item actually
+  // offers it - otherwise every card would just say "Not available",
+  // which adds nothing.
+  const showCod = compareItems.some(s => s.codAvailable);
+
+  const cards = compareItems.map(s => {
+    const hasDiscount = shoeDiscountPercent(s) !== null;
+    const cartLinesForShoe = cart.filter(item => item.shoeId === s.id);
+    const alreadyInCart = cartLinesForShoe.length > 0;
+    const qualityText = qualityLabel(s.quality);
+    const descLines = buildDescriptionLines(s.description);
+
+    return `
+      <div class="compare-card" id="compareCard-${s.id}">
+        <button class="compare-card-remove" onclick="removeFromCompare(${s.id})" aria-label="Remove ${escapeHtml(s.name)} from comparison">✕</button>
+        <img src="${escapeHtml(s.images[0])}" alt="${escapeHtml(s.name)}" class="compare-card-img" onclick="openSavedItemDetail(${s.id})">
+        <div class="compare-card-name">${escapeHtml(s.name)}</div>
+        <div class="compare-card-price-row">
+          <span class="compare-card-price">₹${s.price}</span>
+          ${hasDiscount ? `<span class="compare-card-price-was">₹${s.marketPrice}</span>` : ''}
+        </div>
+
+        <div class="compare-size-label">Size (${escapeHtml(s.sizeSystem)})</div>
+        <div class="compare-size-row" id="compareSizes-${s.id}">${compareSizeButtonsHtml(s)}</div>
+        <div class="size-error" id="compareSizeError-${s.id}" role="alert" aria-live="assertive"></div>
+        <button class="compare-card-add-btn" id="compareAddBtn-${s.id}" onclick="handleCompareAddToCart(${s.id})">${alreadyInCart ? 'Add Another' : 'Add to Cart'}</button>
+
+        <dl class="compare-attr-list">
+          <div class="compare-attr-row"><dt>Brand</dt><dd>${escapeHtml(s.brand)}</dd></div>
+          <div class="compare-attr-row"><dt>Quality</dt><dd>${qualityText ? escapeHtml(qualityText.replace(" Quality.", "")) : "—"}</dd></div>
+          ${showCod ? `<div class="compare-attr-row"><dt>Cash on Delivery</dt><dd>${s.codAvailable ? "Available" : "Not available"}</dd></div>` : ''}
+          <div class="compare-attr-row compare-attr-row--plain"><dd>${descLines.map(l => escapeHtml(l)).join(" · ")}</dd></div>
+        </dl>
+      </div>
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    <div class="item-detail-info">
+      <button class="sheet-back-link" onclick="backToSavedList()">‹ Back to saved list</button>
+      <p class="compare-cap-note">Comparing ${compareItems.length} of 4 max</p>
+      <div class="compare-cards-row" id="compareCardsRow">${cards}</div>
+    </div>
+  `;
+}
+
+// Compact size-select buttons for the compare page - same source data
+// (parseSizes/soldOutSizes) as the product detail page, so results are
+// always consistent, but writes into compareSizes-<id>/compareSizeError-
+// <id> (not the detail page's sizes-<id>/sizeError-<id>) to avoid ever
+// colliding with a stale, hidden product-detail DOM node for the same
+// shoe (closeItemDetail() hides that overlay but doesn't clear its
+// markup, so the plain id would silently double up).
+function compareSizeButtonsHtml(shoe){
+  const sizeOptions = parseSizes(shoe.sizes);
+  const soldOut = shoe.soldOutSizes || [];
+  const selected = selections[shoe.id];
+  return sizeOptions.map(sz => {
+    const isSoldOut = shoe.soldOutAll || soldOut.includes(sz);
+    return `<button class="size-btn ${selected===sz?'selected':''} ${isSoldOut?'soldout':''}"
+      aria-pressed="${selected===sz}" aria-label="Size ${sz}${isSoldOut?' (sold out)':''}"
+      ${isSoldOut ? 'disabled' : `onclick="selectCompareSize(${shoe.id}, ${sz})"`}>${sz}</button>`;
+  }).join("");
+}
+
+function selectCompareSize(shoeId, size){
+  selections[shoeId] = size;
+  const scrollArea = document.getElementById("compareCardsRow");
+  const scrollLeft = scrollArea ? scrollArea.scrollLeft : 0;
+  renderSavedPage();
+  const newScrollArea = document.getElementById("compareCardsRow");
+  if(newScrollArea) newScrollArea.scrollLeft = scrollLeft; // re-render shouldn't reset which cards are in view
+}
+
+// Mirrors addToCart()'s own "please pick a size" validation, just against
+// this card's own compareSizes-<id>/compareSizeError-<id> elements
+// instead of the detail page's - see compareSizeButtonsHtml() above for
+// why they're kept separate.
+function handleCompareAddToCart(shoeId){
+  if(!selections[shoeId]){
+    const errorEl = document.getElementById(`compareSizeError-${shoeId}`);
+    const sizesRow = document.getElementById(`compareSizes-${shoeId}`);
+    if(errorEl){
+      errorEl.textContent = "Please select your required size";
+      errorEl.classList.add("show");
+    }
+    if(sizesRow){
+      sizesRow.classList.remove("shake");
+      void sizesRow.offsetWidth; // restart animation
+      sizesRow.classList.add("shake");
+    }
+    return;
+  }
+  addToCart(shoeId);
+  const btn = document.getElementById(`compareAddBtn-${shoeId}`);
+  if(btn){
+    const original = btn.textContent;
+    btn.textContent = "Added to Cart ✓";
+    btn.classList.add("in-cart");
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = "Add Another"; btn.classList.remove("in-cart"); btn.disabled = false; }, 2200);
+  }
+}
+
+// Removes one product from the current comparison (not from saved/
+// wishlist - just drops it out of this side-by-side view). Re-renders
+// dynamically; if this leaves fewer than 2 items, renderComparePage's
+// own guard above bounces back to the plain saved list.
+function removeFromCompare(shoeId){
+  compareSelection.delete(shoeId);
+  renderSavedPage();
 }
 
 function updateCartCount(){
@@ -3939,7 +5056,8 @@ function updateCartCount(){
   // Reflects total pairs ordered (summing quantity per line), not just the
   // number of distinct product lines - so adding one shoe with Qty 3
   // correctly shows "3" on the cart icon, not "1".
-  el.textContent = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+  const totalQty = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+  el.textContent = totalQty > 0 ? totalQty : "";
   el.classList.remove("bump");
   void el.offsetWidth; // restart animation
   el.classList.add("bump");
