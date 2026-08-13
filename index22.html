@@ -95,7 +95,7 @@
     position:fixed; left:50%; bottom:28px; transform:translate(-50%, 12px);
     max-width:min(88vw, 380px);
     background:var(--ink); color:var(--paper);
-    padding:12px 18px; border-radius:var(--radius-md);
+    padding:12px 18px; border-radius:var(--radius-pill);
     font-size:12.5px; font-weight:700; text-align:center; line-height:1.4;
     box-shadow:var(--shadow-3);
     z-index:200; pointer-events:none;
@@ -487,36 +487,8 @@
   }
   .secondary-nav-btn:active{ transform:scale(0.96); }
   .secondary-nav-btn.active{ background:var(--ink); border-color:var(--ink); color:var(--paper); }
-  .secondary-nav-back{
-    background:var(--panel); border-color:var(--panel); font-weight:800;
-    overflow:hidden; white-space:nowrap;
-    max-width:100px; opacity:1; margin-right:0;
-    border-left-width:1.5px; border-right-width:1.5px;
-    transition:
-      max-width 300ms cubic-bezier(0,0,0.2,1),
-      opacity 250ms cubic-bezier(0,0,0.2,1),
-      padding-left 300ms cubic-bezier(0,0,0.2,1),
-      padding-right 300ms cubic-bezier(0,0,0.2,1),
-      border-left-width 300ms cubic-bezier(0,0,0.2,1),
-      border-right-width 300ms cubic-bezier(0,0,0.2,1),
-      margin-right 300ms cubic-bezier(0,0,0.2,1),
-      background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
-  }
+  .secondary-nav-back{ background:var(--panel); border-color:var(--panel); font-weight:800; }
   .secondary-nav-back:hover{ background:var(--panel-hover); border-color:var(--panel-hover); }
-  /* Collapsed = on the Welcome Page. Animating max-width/padding/border
-     (not display:none, which can't transition, and not transform, which
-     wouldn't affect layout) so the button genuinely slides away to
-     nothing and Home/Shop/etc. reflow left to fill the space - and
-     because this class only ever toggles at the Home <-> other-page
-     boundary, navigating between any two non-Home pages never touches
-     it, so there's nothing to animate there. */
-  .secondary-nav-back.collapsed{
-    max-width:0; opacity:0;
-    padding-left:0; padding-right:0;
-    border-left-width:0; border-right-width:0;
-    margin-right:-8px; /* cancels the row's flex gap so no stray gap is left before Home */
-    pointer-events:none;
-  }
 
   /* ---------- Breadcrumb trail ---------- */
   .breadcrumb{
@@ -585,8 +557,8 @@
   }
   .offers-tier-strip::-webkit-scrollbar{ display:none; }
   .offer-card-compact{
-    flex:none; width:132px; aspect-ratio:3/4;
-    border:none; border-radius:var(--radius-lg); cursor:pointer;
+    flex:none; width:132px; aspect-ratio:16/10;
+    border:none; border-radius:var(--radius-md); cursor:pointer;
     display:flex; align-items:flex-end; padding:10px;
     box-shadow:var(--shadow-2);
     transition:transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
@@ -1655,7 +1627,7 @@
 </div>
 
 <nav class="secondary-nav" id="secondaryNav" aria-label="Quick navigation">
-  <button class="secondary-nav-btn secondary-nav-back collapsed" id="navBackBtn" onclick="history.back()" aria-label="Back">‹ Back</button>
+  <button class="secondary-nav-btn secondary-nav-back" id="navBackBtn" onclick="history.back()" aria-label="Back" style="display:none">‹ Back</button>
   <button class="secondary-nav-btn" id="navHomeBtn" onclick="goHome()">Home</button>
   <button class="secondary-nav-btn" id="navAllBtn" onclick="showAllProducts()">Shop</button>
   <button class="secondary-nav-btn" id="navMensBtn" onclick="selectGenderCategory('mens')">Men's</button>
@@ -1675,11 +1647,11 @@
         <span class="offer-card-label">Get a pair<br>under &#8377;1,000</span>
       </button>
       <button class="offer-card offer-1500" onclick="selectPriceTierHero('under1500')" aria-label="Get a pair under 1500 rupees">
-        <img class="offer-card-img" src="images/offer-1500.jpg" alt="" onerror="this.remove()">
+        <img class="offer-card-img" src="images/hero-new-arrivals.jpg" alt="" onerror="this.remove()">
         <span class="offer-card-label">Get a pair<br>under &#8377;1,500</span>
       </button>
       <button class="offer-card offer-2000" onclick="selectPriceTierHero('under2000')" aria-label="Get a pair under 2000 rupees">
-        <img class="offer-card-img" src="images/offer-2000.jpg" alt="" onerror="this.remove()">
+        <img class="offer-card-img" src="images/hero-under2000.jpg" alt="" onerror="this.remove()">
         <span class="offer-card-label">Get a pair<br>under &#8377;2,000</span>
       </button>
     </div>
@@ -3328,7 +3300,7 @@ function renderFilterStrip(){
   // doesn't stay stuck showing zero results for a filter that vanished.
   // (Under ₹2000/Premium/New Arrivals/Sale are exempt - they're only
   // ever set via the hero cards / hamburger menu, not this pill row.)
-  const HERO_ONLY_FILTERS = ["offers", "under1000", "under1500", "under2000", "premium3000"];
+  const HERO_ONLY_FILTERS = ["under1000", "under1500", "under2000", "premium3000"];
   if(activeFilter !== "all" && !HERO_ONLY_FILTERS.includes(activeFilter) && !filters.some(([key]) => key === activeFilter)){
     activeFilter = "all";
     strip.innerHTML = rowHtml();
@@ -3339,7 +3311,7 @@ function renderFilterStrip(){
 // "under2000"/"premium3000", which no longer have a pill of their own here
 // but still need a human-readable label for the removable chip in the
 // selected-filters row (see renderSelectedFilters).
-const QUICK_FILTER_LABELS = { offers:"Offers", under1000:"Under ₹1,000", under1500:"Under ₹1,500", under2000:"Under ₹2000", premium3000:"Premium" };
+const QUICK_FILTER_LABELS = { under1000:"Under ₹1,000", under1500:"Under ₹1,500", under2000:"Under ₹2000", premium3000:"Premium Shoes" };
 
 function setFilter(key){
   activeFilter = key;
@@ -3522,8 +3494,8 @@ function updateSecondaryNavActiveOnly(){
   if(navMens) navMens.classList.toggle("active", !suppressActive && !onWelcomePage && activeGender === "M");
   if(navWomens) navWomens.classList.toggle("active", !suppressActive && !onWelcomePage && activeGender === "W");
   if(navPremium) navPremium.classList.toggle("active", !suppressActive && !onWelcomePage && activeFilter === "premium3000");
-  if(navOffers) navOffers.classList.toggle("active", !suppressActive && !onWelcomePage && ["offers","under1000","under1500","under2000"].includes(activeFilter));
-  if(navBack) navBack.classList.toggle("collapsed", onWelcomePage && !suppressActive);
+  if(navOffers) navOffers.classList.toggle("active", !suppressActive && !onWelcomePage && ["under1000","under1500","under2000"].includes(activeFilter));
+  if(navBack) navBack.style.display = (onWelcomePage && !suppressActive) ? "none" : "";
 }
 
 // Sets the dedicated-page heading text and shows the small Men's/Women's
@@ -3541,12 +3513,11 @@ function updatePageChrome(){
     return;
   }
   const isPlainAllProducts = activeGender === null && activeFilter === "all";
-  const isOffersTier = ["offers", "under1000", "under1500", "under2000"].includes(activeFilter);
+  const isOffersTier = ["under1000", "under1500", "under2000"].includes(activeFilter);
   let label = "All Products";
   if(activeGender === "M") label = "Men's Footwear";
   else if(activeGender === "W") label = "Women's Footwear";
-  else if(activeFilter === "premium3000") label = "Premium";
-  else if(activeFilter === "offers") label = "Offers";
+  else if(activeFilter === "premium3000") label = "Premium Shoes";
   else if(activeFilter === "under1000") label = "Under ₹1,000";
   else if(activeFilter === "under1500") label = "Under ₹1,500";
   else if(activeFilter === "under2000") label = "Under ₹2,000";
@@ -3570,8 +3541,8 @@ function renderOffersTierStrip(el, isOffersTier){
   }
   const tiers = [
     { key:"under1000", cls:"offer-1000", img:"images/hero-sale.jpg", label:"Get a pair<br>under &#8377;1,000" },
-    { key:"under1500", cls:"offer-1500", img:"images/offer-1500.jpg", label:"Get a pair<br>under &#8377;1,500" },
-    { key:"under2000", cls:"offer-2000", img:"images/offer-2000.jpg", label:"Get a pair<br>under &#8377;2,000" },
+    { key:"under1500", cls:"offer-1500", img:"images/hero-new-arrivals.jpg", label:"Get a pair<br>under &#8377;1,500" },
+    { key:"under2000", cls:"offer-2000", img:"images/hero-under2000.jpg", label:"Get a pair<br>under &#8377;2,000" },
   ];
   el.style.display = "flex";
   el.innerHTML = tiers.map(t => `
@@ -3604,9 +3575,7 @@ function buildSectionBreadcrumbSegs(){
   } else if(activeGender === "W"){
     segs.push({ label:"Women's", onclick:"selectGenderCategory('womens')" });
   } else if(activeFilter === "premium3000"){
-    segs.push({ label:"Premium", onclick:"selectPriceTierHero('premium3000')" });
-  } else if(activeFilter === "offers"){
-    segs.push({ label:"Offers", onclick:"goToOffers()" });
+    segs.push({ label:"Premium Shoes", onclick:"selectPriceTierHero('premium3000')" });
   } else if(activeFilter === "under1000" || activeFilter === "under1500" || activeFilter === "under2000"){
     segs.push({ label:"Offers", onclick:"goToOffers()" });
     segs.push({ label: QUICK_FILTER_LABELS[activeFilter], onclick:`selectPriceTierHero('${activeFilter}')` });
@@ -3657,14 +3626,14 @@ function renderBreadcrumb(){
 // Scrolls straight to the Offers section on the Welcome Page. If we're
 // currently in the products view, goes Home first so the section exists
 // on screen to scroll to.
-// Entry point for the Offers nav/hamburger link - goes to a general
-// Offers landing state (price < 2000, the same condition as the hero
-// cards - not shoe.isSale) rather than defaulting into any one specific
-// tier. Tapping a specific tier card - on the Welcome Page or in the
-// in-page tier picker - still calls selectPriceTierHero() directly with
-// that tier, so only the generic nav/hamburger entry point lands here.
+// Entry point for the Offers nav/hamburger link - goes straight to the
+// dedicated Offers grid page (tier picker + category picker, same
+// pattern as Premium Shoes/All Products), defaulting to the broadest
+// tier. This is a real destination now, not a scroll-to on the Welcome
+// Page - use the 3 cards in the Welcome Page's own Offers section if you
+// want to jump to a specific tier from there instead.
 function goToOffers(){
-  selectPriceTierHero("offers");
+  selectPriceTierHero("under2000");
 }
 
 // ---------- Dedicated-view URL routing (Men's/Women's/Offers/Discounts/
@@ -3679,8 +3648,9 @@ function viewKeyAndHash(){
   if(onWelcomePage) return { key: null, hash: "" };
   if(activeGender === "M") return { key: "mens", hash: "#mens" };
   if(activeGender === "W") return { key: "womens", hash: "#womens" };
+  if(activeFilter === "sale") return { key: "discounts", hash: "#discounts" };
   if(activeFilter === "premium3000") return { key: "premium", hash: "#premium" };
-  if(activeFilter === "offers") return { key: "offers", hash: "#offers" };
+  if(activeFilter === "new") return { key: "new", hash: "#new-arrivals" };
   if(activeFilter === "under1000") return { key: "offers1000", hash: "#offers-1000" };
   if(activeFilter === "under1500") return { key: "offers1500", hash: "#offers-1500" };
   if(activeFilter === "under2000") return { key: "offers2000", hash: "#offers-2000" };
@@ -3712,8 +3682,9 @@ function applyViewFromHash(hash){
   suppressViewHashPush = true;
   if(hash === "#mens") selectGenderCategory("mens");
   else if(hash === "#womens") selectGenderCategory("womens");
+  else if(hash === "#discounts") selectPriceTierHero("sale");
   else if(hash === "#premium") selectPriceTierHero("premium3000");
-  else if(hash === "#offers") selectPriceTierHero("offers");
+  else if(hash === "#new-arrivals") selectPriceTierHero("new");
   else if(hash === "#offers-1000") selectPriceTierHero("under1000");
   else if(hash === "#offers-1500") selectPriceTierHero("under1500");
   else if(hash === "#offers-2000") selectPriceTierHero("under2000");
@@ -4176,7 +4147,8 @@ function getFilteredShoes(){
     if(activeType !== "All" && categoryType(shoe.category) !== activeType) return false;
     if(activeBrands.size > 0 && !activeBrands.has(shoe.brand)) return false;
     if(activeModels.size > 0 && !activeModels.has(detectModel(shoe.name))) return false;
-    if(activeFilter === "offers" && shoe.price >= 2000) return false;
+    if(activeFilter === "new" && !shoe.isNew) return false;
+    if(activeFilter === "sale" && !shoe.isSale) return false;
     if(activeFilter === "under1000" && shoe.price >= 1000) return false;
     if(activeFilter === "under1500" && shoe.price >= 1500) return false;
     if(activeFilter === "under2000" && shoe.price >= 2000) return false;
