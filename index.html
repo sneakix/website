@@ -451,12 +451,12 @@
   }
   .gender-card-label{
     color:#fff; font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
-    font-size:17px; letter-spacing:0.04em; text-transform:uppercase; text-align:center;
+    font-size:22px; letter-spacing:0.04em; text-transform:uppercase; text-align:center;
     text-shadow:0 2px 8px rgba(0,0,0,0.35);
   }
-  @media(min-width:480px){ .gender-card-label{ font-size:21px; } }
-  @media(min-width:640px){ .gender-card-label{ font-size:24px; } }
-  @media(min-width:1024px){ .gender-card-label{ font-size:38px; } }
+  @media(min-width:480px){ .gender-card-label{ font-size:27px; } }
+  @media(min-width:640px){ .gender-card-label{ font-size:30px; } }
+  @media(min-width:1024px){ .gender-card-label{ font-size:42px; } }
 
   /* ---------- Secondary nav (Welcome Page + dedicated pages) ---------- */
   .secondary-nav{
@@ -551,7 +551,7 @@
     flex:none; width:62%; max-width:220px;
     aspect-ratio:3/4;
     border:none; border-radius:var(--radius-lg); cursor:pointer;
-    display:flex; align-items:flex-end; padding:16px;
+    display:flex; align-items:flex-end; justify-content:center; padding:16px;
     box-shadow:var(--shadow-2);
     transition:transform var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease);
   }
@@ -559,15 +559,18 @@
   .offer-card:active{ transform:scale(0.97); }
   .offer-card-img{
     position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;
+    filter:grayscale(85%) contrast(1.08) brightness(0.92);
+    transition:transform 420ms var(--ease);
   }
+  .offer-card:hover .offer-card-img{ transform:scale(1.06); }
   .offer-card::after{
     content:""; position:absolute; inset:0; z-index:1;
-    background:linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.75) 100%);
+    background:linear-gradient(180deg, rgba(17,17,17,0) 40%, rgba(17,17,17,0.75) 100%);
   }
   .offer-card-label{
     position:relative; z-index:2;
     color:#fff; font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
-    font-size:22px; line-height:1.2; letter-spacing:0.03em; text-transform:uppercase; text-align:left;
+    font-size:22px; line-height:1.2; letter-spacing:0.03em; text-transform:uppercase; text-align:center;
     text-shadow:0 2px 8px rgba(0,0,0,0.35);
   }
   .offer-card.offer-1000{ background:linear-gradient(135deg, #c0281f 0%, #ff6a3d 100%); }
@@ -602,7 +605,7 @@
   }
   @media(min-width:640px){ .welcome-gender-stack{ padding:22px 22px 26px; gap:18px; } }
   @media(min-width:1280px){ .welcome-gender-stack{ max-width:960px; margin:0 auto; width:100%; } }
-  .gender-card-wide{ aspect-ratio:16/9; }
+  .gender-card-wide{ aspect-ratio:4/5; }
 
   /* ---------- Category strip ---------- */
   .cat-strip{
@@ -686,7 +689,7 @@
   }
   .ap-gender-tile{
     position:relative; display:block; border:none; padding:0; margin:0; cursor:pointer;
-    border-radius:var(--radius-md); overflow:hidden; aspect-ratio:16/9; background:var(--panel);
+    border-radius:var(--radius-md); overflow:hidden; aspect-ratio:1/1; background:var(--panel);
     box-shadow:var(--shadow-2);
   }
   .ap-gender-tile img{
@@ -700,10 +703,10 @@
   }
   .ap-gender-tile-label{
     color:#fff; font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
-    font-size:15px; letter-spacing:0.03em; text-transform:uppercase; text-shadow:0 2px 6px rgba(0,0,0,0.4);
+    font-size:19px; letter-spacing:0.03em; text-transform:uppercase; text-shadow:0 2px 6px rgba(0,0,0,0.4);
   }
-  @media(min-width:480px){ .ap-gender-tile-label{ font-size:17px; } }
-  @media(min-width:1024px){ .ap-gender-tile-label{ font-size:26px; } }
+  @media(min-width:480px){ .ap-gender-tile-label{ font-size:22px; } }
+  @media(min-width:1024px){ .ap-gender-tile-label{ font-size:32px; } }
 
   /* ---------- Pagination ---------- */
   .pagination{
@@ -1655,7 +1658,7 @@
 </div>
 
 <nav class="secondary-nav" id="secondaryNav" aria-label="Quick navigation">
-  <button class="secondary-nav-btn secondary-nav-back collapsed" id="navBackBtn" onclick="history.back()" aria-label="Back">‹ Back</button>
+  <button class="secondary-nav-btn secondary-nav-back collapsed" id="navBackBtn" onclick="navBackClick()" aria-label="Back">‹ Back</button>
   <button class="secondary-nav-btn" id="navHomeBtn" onclick="goHome()">Home</button>
   <button class="secondary-nav-btn" id="navAllBtn" onclick="showAllProducts()">Shop</button>
   <button class="secondary-nav-btn" id="navMensBtn" onclick="selectGenderCategory('mens')">Men's</button>
@@ -1916,7 +1919,6 @@
 
 <!-- Full-screen item detail -->
 <div class="item-detail-overlay info-page-overlay" id="itemDetailOverlay" role="dialog" aria-modal="true" aria-label="Product details">
-  <button class="item-detail-back" onclick="closeItemDetail()" aria-label="Back">‹ Back</button>
   <div class="item-detail-scroll" id="itemDetailContent"></div>
 </div>
 
@@ -2082,7 +2084,7 @@
       <div class="field"><label for="f_state">State</label><input required id="f_state" name="state" autocomplete="address-level1" placeholder="State"></div>
       <div class="field"><label for="f_pin">PIN Code</label><input required id="f_pin" name="pin" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="postal-code" placeholder="6-digit PIN"></div>
       <div class="field"><label for="f_phone1">Contact No. 1</label><input required id="f_phone1" name="phone1" type="tel" inputmode="numeric" autocomplete="tel" pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number"></div>
-      <div class="field"><label for="f_phone2">Contact No. 2 <span class="optional">(optional)</span></label><input id="f_phone2" name="phone2" type="tel" inputmode="tel" pattern="[0-9]{10}" maxlength="10" placeholder="Backup number"></div>
+      <div class="field"><label for="f_phone2">Contact No. 2 <span class="optional">(optional)</span></label><input id="f_phone2" name="phone2" type="tel" inputmode="numeric" autocomplete="tel" pattern="[0-9]{10}" maxlength="10" placeholder="Backup number"></div>
       <div class="field"><label for="f_remarks">Remarks / Additional Notes <span class="optional">(optional)</span></label><textarea id="f_remarks" name="remarks" rows="2" placeholder="Additional Information or Queries"></textarea></div>
       <button type="submit" class="wa-submit">Send Order on WhatsApp</button>
       <div class="form-note">Tapping this opens WhatsApp with your full order pre-filled. Nothing is charged here - payment is arranged directly in chat.</div>
@@ -2389,10 +2391,13 @@ function applyCatalogRows(rawRows, isLiveFetch){
 function reconcileCartWithCatalog(){
   if(cart.length === 0) return;
   let changed = false;
+  let priceChanged = false;
+  let itemsRemoved = false;
   cart = cart.filter(item => {
     const shoe = SHOES.find(s => s.id === item.shoeId);
-    if(!shoe){ changed = true; return false; } // discontinued - drop the line
+    if(!shoe){ changed = true; itemsRemoved = true; return false; } // discontinued - drop the line
     if(shoe.price !== item.price || shoe.marketPrice !== item.marketPrice || shoe.images[0] !== item.image || shoe.name !== item.name || shoe.brand !== item.brand){
+      if(shoe.price !== item.price) priceChanged = true;
       item.price = shoe.price;
       item.marketPrice = shoe.marketPrice;
       item.image = shoe.images[0];
@@ -2406,6 +2411,11 @@ function reconcileCartWithCatalog(){
     updateCartCount();
     const cartOverlay = document.getElementById("cartOverlay");
     if(cartOverlay && cartOverlay.classList.contains("open")) renderCartLines();
+    // Let the customer know something in their cart actually changed
+    // underneath them - a price drift or a removed item should never be
+    // silent, or they can land on checkout confused about the total.
+    if(itemsRemoved) showToast("An item in your cart is no longer available and was removed.");
+    else if(priceChanged) showToast("A price in your cart was just updated.");
   }
 }
 
@@ -3455,6 +3465,7 @@ const CATEGORY_IMAGES = {
 function categoryScopeShoes(){
   return SHOES.filter(s => {
     if(activeGender && !shoeMatchesGender(s, activeGender)) return false;
+    if(activeFilter === "offers" && s.price >= 2000) return false;
     if(activeFilter === "under1000" && s.price >= 1000) return false;
     if(activeFilter === "under1500" && s.price >= 1500) return false;
     if(activeFilter === "under2000" && s.price >= 2000) return false;
@@ -3542,7 +3553,7 @@ function updatePageChrome(){
   }
   const isPlainAllProducts = activeGender === null && activeFilter === "all";
   const isOffersTier = ["offers", "under1000", "under1500", "under2000"].includes(activeFilter);
-  let label = "All Products";
+  let label = "Shop";
   if(activeGender === "M") label = "Men's Footwear";
   else if(activeGender === "W") label = "Women's Footwear";
   else if(activeFilter === "premium3000") label = "Premium";
@@ -3611,7 +3622,7 @@ function buildSectionBreadcrumbSegs(){
     segs.push({ label:"Offers", onclick:"goToOffers()" });
     segs.push({ label: QUICK_FILTER_LABELS[activeFilter], onclick:`selectPriceTierHero('${activeFilter}')` });
   } else {
-    segs.push({ label:"All Products", onclick:"showAllProducts()" });
+    segs.push({ label:"Shop", onclick:"showAllProducts()" });
   }
   if(activeCategory !== "All") segs.push({ label: activeCategory, onclick: null });
   return segs;
@@ -4198,13 +4209,29 @@ function getFilteredShoes(){
     if(activeSort === "price_high") return b.price - a.price;
     if(activeSort === "az") return a.name.localeCompare(b.name);
     if(activeSort === "newest") return b.order - a.order; // pure recency, no priority boost - see "Default" below for that
-    // Default ("latest"): Website_Listed=2 items surface first as a group
-    // (still ordered by recency within that group), then everything else
-    // by recency - "1" items are never hidden, "2" just gets priority
-    // placement on top.
+    // Default ("latest"): within an Offers tier, the tier's own price
+    // band surfaces first - e.g. Under ₹1,500 is technically 0-1499, but
+    // showing the 1000-1499 items first (before repeating the same
+    // 0-999 items Under ₹1,000 already showed) is what actually makes
+    // each tier feel distinct instead of just a superset of the last.
+    const bandA = tierBandPriority(a), bandB = tierBandPriority(b);
+    if(bandA !== bandB) return bandB - bandA;
+    // Website_Listed=2 items surface first as a group (still ordered by
+    // recency within that group), then everything else by recency -
+    // "1" items are never hidden, "2" just gets priority placement.
     if(a.listedPriority !== b.listedPriority) return b.listedPriority - a.listedPriority;
     return b.order - a.order; // latest-added first: later sheet rows = newer products
   });
+}
+
+// Which price sub-band a shoe falls into for the CURRENT Offers tier -
+// only under1500/under2000 have a "cheaper tier already covered this"
+// overlap worth prioritizing against; under1000 is the base tier with
+// nothing beneath it to deprioritize.
+function tierBandPriority(shoe){
+  if(activeFilter === "under1500") return shoe.price >= 1000 ? 1 : 0;
+  if(activeFilter === "under2000") return shoe.price >= 1500 ? 1 : 0;
+  return 0;
 }
 
 function renderPagination(totalCount){
@@ -4541,6 +4568,21 @@ function openItemDetail(shoeId){
   // back to its own detail page.
   suppressHashRoute = true;
   history.replaceState(null, "", `#shoe-${shoe.id}`);
+}
+
+// The nav's Back button needs special handling for product detail:
+// opening a product uses history.replaceState() (not pushState - so
+// clicking through many products from search/a grid doesn't pile up a
+// huge history stack), which means a plain history.back() would skip
+// straight past the grid state instead of returning to it. Everywhere
+// else (sections, Size Chart, Policies) a real history entry already
+// exists, so plain history.back() already does the right thing there.
+function navBackClick(){
+  if(itemDetailShoeId !== null){
+    closeItemDetail();
+  } else {
+    history.back();
+  }
 }
 
 function closeItemDetail(){
