@@ -3707,6 +3707,7 @@ function buildSectionBreadcrumbSegs(){
     segs.push({ label:"Offers", onclick:"goToOffers()" });
     segs.push({ label: QUICK_FILTER_LABELS[activeFilter], onclick:`selectPriceTierHero('${activeFilter}')` });
   } else if(activeFilter === "seasonal"){
+    segs.push({ label:"Offers", onclick:"goToOffers()" });
     segs.push({ label:"Onam Special Offer", onclick:"selectPriceTierHero('seasonal')" });
   } else {
     segs.push({ label:"Shop", onclick:"showAllProducts()" });
@@ -4420,6 +4421,16 @@ function renderGrid(){
     renderPagination(0);
     return;
   }
+
+  // Clamp BEFORE slicing, not just inside renderPagination() (which runs
+  // after this slice, too late to matter here) - otherwise a stale
+  // currentPage left over from a bigger result set (e.g. a periodic
+  // catalog refresh shrinks the current filter down to fewer pages) can
+  // slice past the end of fullList and silently render an empty grid
+  // even though matching products exist, with no pagination controls
+  // visible to get back.
+  const totalPages = Math.max(1, Math.ceil(fullList.length / PAGE_SIZE));
+  if(currentPage > totalPages) currentPage = totalPages;
 
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const list = fullList.slice(pageStart, pageStart + PAGE_SIZE);
