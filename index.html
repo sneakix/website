@@ -568,7 +568,6 @@
   .offer-card:active{ transform:scale(0.97); }
   .offer-card-img{
     position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;
-    filter:grayscale(85%) contrast(1.08) brightness(0.92);
     transition:transform 420ms var(--ease);
   }
   .offer-card:hover .offer-card-img{ transform:scale(1.06); }
@@ -585,6 +584,12 @@
   .offer-card.offer-1000{ background:linear-gradient(135deg, #c0281f 0%, #ff6a3d 100%); }
   .offer-card.offer-1500{ background:linear-gradient(135deg, #7a1616 0%, #b8860b 100%); }
   .offer-card.offer-2000{ background:linear-gradient(135deg, #161616 0%, #3a3a3a 100%); }
+  /* Special/seasonal offers card - maroon-to-gold so it reads as
+     "special occasion" against the other 3 (which are plain price
+     tiers). Swap images/seasonal-sale.jpg for the current festival's
+     photo whenever the season changes; the color works year-round so it
+     doesn't need to change too. */
+  .offer-card.offer-seasonal{ background:linear-gradient(135deg, #7a0c2e 0%, #d4a017 100%); }
 
   /* Compact version of the same 3 cards, used as the "which tier"
      sub-nav on the Offers grid page itself (Home's Offers section stays
@@ -717,18 +722,24 @@
 
   /* ---------- Pagination ---------- */
   .pagination{
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    flex-wrap:wrap; flex:1 0 auto;
+    display:flex; align-items:center; justify-content:center; gap:2px;
+    flex-wrap:nowrap; flex:1 0 auto;
     padding:22px 16px 30px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
   }
+  .pagination::-webkit-scrollbar{ display:none; }
+  @media (min-width:480px){ .pagination{ gap:6px; } }
   .page-arrow, .page-num{
     display:flex; align-items:center; justify-content:center;
-    min-width:36px; height:36px; padding:0 4px;
+    flex:0 0 auto;
+    min-width:32px; height:32px; padding:0 2px;
     border:none; background:transparent; cursor:pointer;
-    font-family:inherit; font-size:15px; font-weight:600; color:var(--ink);
+    font-family:inherit; font-size:14px; font-weight:600; color:var(--ink);
     border-radius:50%;
     transition:background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   }
+  @media (min-width:480px){ .page-arrow, .page-num{ min-width:36px; height:36px; font-size:15px; } }
   .page-num:hover, .page-arrow:hover{ background:var(--panel); }
   .page-num:active, .page-arrow:active{ transform:scale(0.92); }
   .page-num.active{ background:var(--ink); color:var(--paper); font-weight:800; }
@@ -1680,6 +1691,17 @@
   <section class="offers-section" id="offersSection">
     <h2 class="offers-heading">Offers</h2>
     <div class="offers-strip">
+      <!-- Special Offers: hidden by default, JS shows it only when at
+           least one product has "Seasonal Sale" = TRUE in the sheet (see
+           updateSeasonalCardVisibility). To run a seasonal sale: flag the
+           products in the sheet and this card appears automatically; clear
+           the flags and it disappears automatically. To reskin it for a
+           new festival, just replace images/seasonal-sale.jpg and edit
+           the label text below - no other changes needed. -->
+      <button class="offer-card offer-seasonal" id="seasonalOfferCard" style="display:none" onclick="selectPriceTierHero('seasonal')" aria-label="Shop Onam Special Offer">
+        <img class="offer-card-img" src="images/seasonal-sale.jpg" alt="" onerror="this.remove()">
+        <span class="offer-card-label">Onam<br>Special Offer</span>
+      </button>
       <button class="offer-card offer-1000" onclick="selectPriceTierHero('under1000')" aria-label="Get a pair under 1000 rupees">
         <img class="offer-card-img" src="images/hero-sale.jpg" alt="" onerror="this.remove()">
         <span class="offer-card-label">Get a pair<br>under &#8377;1,000</span>
@@ -2301,6 +2323,13 @@ function rowsToShoes(rows){
       returnAvailable: toBool(getRowValue(r, "Return Available", "Return Availiable", "ReturnAvailable")),
       isNew: toBool(r["New Arrival"]),
       isSale: toBool(r["Sale"]),
+      // Per-product flag for the homepage "Special Offers" card - mark
+      // any product TRUE to include it in the current seasonal sale. The
+      // card on the Welcome Page auto-shows/hides based on whether ANY
+      // product is currently flagged (see hasSeasonalOffer), so turning a
+      // season "off" is just clearing this column back to FALSE/blank for
+      // every row - no code change needed.
+      isSeasonal: toBool(getRowValue(r, "Seasonal Sale", "Seasonal_Sale", "seasonal_sale")),
       // "1" and "2" both list the product; "0", blank, or anything else
       // keeps it out of the catalog entirely. "2" additionally gets sort
       // priority in the default view (see listedPriority + the "latest"
@@ -2352,6 +2381,14 @@ function writeCatalogCache(rawRows){
 function applyCatalogRows(rawRows, isLiveFetch){
   SHOES = rowsToShoes(rawRows);
 
+  // Recompute whether the Special Offers card should show at all - it's
+  // a pure reflection of whether at least one row currently has
+  // Seasonal Sale = TRUE, so the merchant flips it on/off entirely from
+  // the sheet, no code involved. Falls back out of the filter itself if
+  // the last flagged product gets un-flagged mid-session.
+  hasSeasonalOffer = SHOES.some(s => s.isSeasonal);
+  if(activeFilter === "seasonal" && !hasSeasonalOffer) activeFilter = "all";
+
   if(activeCategory !== "All" && !SHOES.some(s => categoryMatches(s.category, activeCategory))) activeCategory = "All";
   if(activeGender && !SHOES.some(s => shoeMatchesGender(s, activeGender))) activeGender = null;
   if(activeType !== "All" && !SHOES.some(s => categoryType(s.category) === activeType)) activeType = "All";
@@ -2365,6 +2402,7 @@ function applyCatalogRows(rawRows, isLiveFetch){
   renderGrid();
   updateCartCount();
   updateGenderHeroVisibility();
+  updateSeasonalCardVisibility();
   document.getElementById("grid").setAttribute("aria-busy", "false");
 
   if(itemDetailShoeId !== null){
@@ -2513,7 +2551,10 @@ const SHIPPING_TIERS = {
 // false = showing the products view (search/filters/grid) - reached via
 // Men's/Women's, an Offers tier, Discounts, or All Products.
 let onWelcomePage = true;
-let currentDedicatedView = null; // null while on Home; else "mens"|"womens"|"all"|"discounts"|"premium"|"new"|"offers1000"|"offers1500"|"offers2000"
+let currentDedicatedView = null; // null while on Home; else "mens"|"womens"|"all"|"discounts"|"premium"|"new"|"offers1000"|"offers1500"|"offers2000"|"seasonal"
+// Whether the "Special Offers" hero card should currently be visible -
+// recomputed from the sheet on every load, see applyCatalogRows().
+let hasSeasonalOffer = false;
 let suppressViewHashPush = false;
 let hashViewApplied = false;
 let activeFilter = "all";       // all | new | sale | under2000 | under1500 | under1000 | premium3000
@@ -2601,7 +2642,7 @@ function showToast(message){
 }
 let savedViewMode = "list";                 // "list" | "compare" - which content the Saved page currently shows
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 32;
 let currentPage = 1;
 let preloadNextBatchTimer = null;
 let currentFullPage = null; // 'size-guide' | 'policies' | null - declared early since closeAllOverlays() (used throughout) reads it
@@ -3477,6 +3518,7 @@ function categoryScopeShoes(){
     if(activeFilter === "under1500" && s.price >= 1500) return false;
     if(activeFilter === "under2000" && s.price >= 2000) return false;
     if(activeFilter === "premium3000" && s.price < 2750) return false;
+    if(activeFilter === "seasonal" && !s.isSeasonal) return false;
     return true;
   });
 }
@@ -3519,6 +3561,16 @@ function updateGenderHeroVisibility(){
   updateSecondaryNavActiveOnly();
   updatePageChrome();
   syncViewHash();
+}
+
+// Shows/hides the "Special Offers" hero card on the Welcome Page based
+// on hasSeasonalOffer (recomputed on every catalog load - see
+// applyCatalogRows). Nothing else needs to call this except a catalog
+// refresh, since the card's own visibility never changes from user
+// interaction the way the gender hero does.
+function updateSeasonalCardVisibility(){
+  const card = document.getElementById("seasonalOfferCard");
+  if(card) card.style.display = hasSeasonalOffer ? "" : "none";
 }
 
 // Nav active-state highlighting + the Back button's visibility, shared
@@ -3568,6 +3620,7 @@ function updatePageChrome(){
   else if(activeFilter === "under1000") label = "Under ₹1,000";
   else if(activeFilter === "under1500") label = "Under ₹1,500";
   else if(activeFilter === "under2000") label = "Under ₹2,000";
+  else if(activeFilter === "seasonal") label = "Onam Special Offer";
 
   if(heading){ heading.textContent = label; heading.style.display = ""; }
   if(tiles) tiles.style.display = isPlainAllProducts ? "grid" : "none";
@@ -3628,6 +3681,8 @@ function buildSectionBreadcrumbSegs(){
   } else if(activeFilter === "under1000" || activeFilter === "under1500" || activeFilter === "under2000"){
     segs.push({ label:"Offers", onclick:"goToOffers()" });
     segs.push({ label: QUICK_FILTER_LABELS[activeFilter], onclick:`selectPriceTierHero('${activeFilter}')` });
+  } else if(activeFilter === "seasonal"){
+    segs.push({ label:"Onam Special Offer", onclick:"selectPriceTierHero('seasonal')" });
   } else {
     segs.push({ label:"Shop", onclick:"showAllProducts()" });
   }
@@ -3702,6 +3757,7 @@ function viewKeyAndHash(){
   if(activeFilter === "under1000") return { key: "offers1000", hash: "#offers-1000" };
   if(activeFilter === "under1500") return { key: "offers1500", hash: "#offers-1500" };
   if(activeFilter === "under2000") return { key: "offers2000", hash: "#offers-2000" };
+  if(activeFilter === "seasonal") return { key: "seasonal", hash: "#seasonal-offers" };
   return { key: "all", hash: "#all-products" };
 }
 
@@ -3735,6 +3791,7 @@ function applyViewFromHash(hash){
   else if(hash === "#offers-1000") selectPriceTierHero("under1000");
   else if(hash === "#offers-1500") selectPriceTierHero("under1500");
   else if(hash === "#offers-2000") selectPriceTierHero("under2000");
+  else if(hash === "#seasonal-offers") selectPriceTierHero("seasonal");
   else if(hash === "#all-products") showAllProducts();
   else goHome();
   suppressViewHashPush = false;
@@ -4199,6 +4256,7 @@ function getFilteredShoes(){
     if(activeFilter === "under1500" && shoe.price >= 1500) return false;
     if(activeFilter === "under2000" && shoe.price >= 2000) return false;
     if(activeFilter === "premium3000" && shoe.price < 2750) return false;
+    if(activeFilter === "seasonal" && !shoe.isSeasonal) return false;
     if(priceMin > 0 || priceMax < 10000){
       if(shoe.price < priceMin || shoe.price > priceMax) return false;
     }
@@ -4254,7 +4312,7 @@ function renderPagination(totalCount){
   // Windowed page numbers (current ± 2) with an ellipsis, so a catalog
   // with dozens of pages doesn't render dozens of number buttons - always
   // shows page 1 and the last page as anchors.
-  const windowSize = 2;
+  const windowSize = 1;
   const pages = [];
   pages.push(1);
   for(let p = currentPage - windowSize; p <= currentPage + windowSize; p++){
