@@ -501,14 +501,19 @@
     overflow:hidden; white-space:nowrap;
     max-width:100px; opacity:1; margin-right:0;
     border-left-width:1.5px; border-right-width:1.5px;
+    /* This (the non-.collapsed state) is the target style used when the
+       button is EXPANDING - i.e. leaving Home for any other page - so
+       these durations control that direction only. Slower/more visible
+       than before per request; the collapse (other page -> Home) below
+       is untouched since that one already felt right. */
     transition:
-      max-width 300ms cubic-bezier(0,0,0.2,1),
-      opacity 250ms cubic-bezier(0,0,0.2,1),
-      padding-left 300ms cubic-bezier(0,0,0.2,1),
-      padding-right 300ms cubic-bezier(0,0,0.2,1),
-      border-left-width 300ms cubic-bezier(0,0,0.2,1),
-      border-right-width 300ms cubic-bezier(0,0,0.2,1),
-      margin-right 300ms cubic-bezier(0,0,0.2,1),
+      max-width 600ms cubic-bezier(0,0,0.2,1),
+      opacity 550ms cubic-bezier(0,0,0.2,1),
+      padding-left 600ms cubic-bezier(0,0,0.2,1),
+      padding-right 600ms cubic-bezier(0,0,0.2,1),
+      border-left-width 600ms cubic-bezier(0,0,0.2,1),
+      border-right-width 600ms cubic-bezier(0,0,0.2,1),
+      margin-right 600ms cubic-bezier(0,0,0.2,1),
       background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
   }
   .secondary-nav-back:hover{ background:var(--panel-hover); border-color:var(--panel-hover); }
@@ -518,13 +523,26 @@
      nothing and Home/Shop/etc. reflow left to fill the space - and
      because this class only ever toggles at the Home <-> other-page
      boundary, navigating between any two non-Home pages never touches
-     it, so there's nothing to animate there. */
+     it, so there's nothing to animate there. This is the target style
+     used when COLLAPSING (other page -> Home), so it keeps its own
+     (faster, original) durations regardless of the expand speed above -
+     a CSS transition always uses the transition-duration belonging to
+     the state being transitioned INTO. */
   .secondary-nav-back.collapsed{
     max-width:0; opacity:0;
     padding-left:0; padding-right:0;
     border-left-width:0; border-right-width:0;
     margin-right:-8px; /* cancels the row's flex gap so no stray gap is left before Home */
     pointer-events:none;
+    transition:
+      max-width 300ms cubic-bezier(0,0,0.2,1),
+      opacity 250ms cubic-bezier(0,0,0.2,1),
+      padding-left 300ms cubic-bezier(0,0,0.2,1),
+      padding-right 300ms cubic-bezier(0,0,0.2,1),
+      border-left-width 300ms cubic-bezier(0,0,0.2,1),
+      border-right-width 300ms cubic-bezier(0,0,0.2,1),
+      margin-right 300ms cubic-bezier(0,0,0.2,1),
+      background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
   }
 
   /* ---------- Breadcrumb trail ---------- */
@@ -3386,7 +3404,7 @@ function renderFilterStrip(){
   // doesn't stay stuck showing zero results for a filter that vanished.
   // (Under ₹2000/Premium/New Arrivals/Sale are exempt - they're only
   // ever set via the hero cards / hamburger menu, not this pill row.)
-  const HERO_ONLY_FILTERS = ["offers", "under1000", "under1500", "under2000", "premium3000"];
+  const HERO_ONLY_FILTERS = ["offers", "under1000", "under1500", "under2000", "premium3000", "seasonal"];
   if(activeFilter !== "all" && !HERO_ONLY_FILTERS.includes(activeFilter) && !filters.some(([key]) => key === activeFilter)){
     activeFilter = "all";
     strip.innerHTML = rowHtml();
@@ -3592,7 +3610,7 @@ function updateSecondaryNavActiveOnly(){
   if(navMens) navMens.classList.toggle("active", !suppressActive && !onWelcomePage && activeGender === "M");
   if(navWomens) navWomens.classList.toggle("active", !suppressActive && !onWelcomePage && activeGender === "W");
   if(navPremium) navPremium.classList.toggle("active", !suppressActive && !onWelcomePage && activeFilter === "premium3000");
-  if(navOffers) navOffers.classList.toggle("active", !suppressActive && !onWelcomePage && ["offers","under1000","under1500","under2000"].includes(activeFilter));
+  if(navOffers) navOffers.classList.toggle("active", !suppressActive && !onWelcomePage && ["offers","under1000","under1500","under2000","seasonal"].includes(activeFilter));
   if(navBack) navBack.classList.toggle("collapsed", onWelcomePage && !suppressActive);
 }
 
@@ -3611,7 +3629,7 @@ function updatePageChrome(){
     return;
   }
   const isPlainAllProducts = activeGender === null && activeFilter === "all";
-  const isOffersTier = ["offers", "under1000", "under1500", "under2000"].includes(activeFilter);
+  const isOffersTier = ["offers", "under1000", "under1500", "under2000", "seasonal"].includes(activeFilter);
   let label = "Shop";
   if(activeGender === "M") label = "Men's Footwear";
   else if(activeGender === "W") label = "Women's Footwear";
@@ -3644,6 +3662,13 @@ function renderOffersTierStrip(el, isOffersTier){
     { key:"under1500", cls:"offer-1500", img:"images/offer-1500.jpg", label:"Get a pair<br>under &#8377;1,500" },
     { key:"under2000", cls:"offer-2000", img:"images/offer-2000.jpg", label:"Get a pair<br>under &#8377;2,000" },
   ];
+  // Seasonal tile only joins the strip while it's actually running (same
+  // condition as the homepage card - see hasSeasonalOffer), so this strip
+  // quietly goes back to 3 tiles the moment the sheet's Seasonal Sale
+  // column is cleared, no code change needed.
+  if(hasSeasonalOffer){
+    tiers.unshift({ key:"seasonal", cls:"offer-seasonal", img:"images/seasonal-sale.jpg", label:"Onam<br>Special Offer" });
+  }
   el.style.display = "flex";
   el.innerHTML = tiers.map(t => `
     <button class="offer-card offer-card-compact ${t.cls} ${activeFilter===t.key?'active':''}" onclick="selectPriceTierHero('${t.key}')" aria-pressed="${activeFilter===t.key}">
