@@ -332,12 +332,42 @@
     box-shadow:0 0 0 3px rgba(17,17,17,0.06);
   }
   .search-box .icon{ font-size:15px; opacity:0.65; flex:none; }
+  .search-box .search-icon-btn{
+    border:none; background:transparent; padding:0; margin:0; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    color:inherit; -webkit-tap-highlight-color:transparent;
+  }
   .search-box input{
     border:none; background:transparent; outline:none;
     font-size:15px; width:100%; color:var(--ink);
     font-family:inherit;
   }
   .search-box input::placeholder{ color:var(--muted); }
+
+  /* ---------- Home (Welcome Page) search + filter row ----------
+     Sits at the very top of #genderHero, just below the nav pills - so
+     it shows/hides together with the rest of the Home content for free
+     (no separate visibility toggle needed) and never appears while
+     browsing a listing page, where the full search-wrap below already
+     covers the same job. Typing here and hitting Enter/tapping the icon,
+     or tapping the funnel button, both hand off into All Products (see
+     submitHomeSearch() / openHomeFilters()) rather than filtering
+     anything in place - there's no grid on Home to filter yet. */
+  .home-search-row{
+    display:flex; align-items:center; gap:8px;
+    padding:14px 16px 6px;
+  }
+  .home-search-row .search-box{ flex:1 1 auto; min-width:0; }
+  .home-filter-btn{
+    flex:none; display:flex; align-items:center; justify-content:center;
+    width:46px; height:46px;
+    background:var(--panel); border:1.5px solid var(--line); border-radius:var(--radius-md);
+    color:var(--ink); cursor:pointer;
+    transition:background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .home-filter-btn svg{ width:19px; height:19px; }
+  .home-filter-btn:hover{ background:var(--panel-hover); }
+  .home-filter-btn:active{ transform:scale(0.94); }
 
   /* ---------- Filter pills ---------- */
   .filter-strip{
@@ -1706,6 +1736,15 @@
 <nav class="breadcrumb" id="breadcrumbNav" aria-label="Breadcrumb" style="display:none"></nav>
 
 <div id="genderHero">
+  <div class="home-search-row">
+    <div class="search-box">
+      <button type="button" class="icon search-icon-btn" onclick="submitHomeSearch()" aria-label="Search"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+      <input id="homeSearchInput" type="search" aria-label="Search by name, brand, or edition" placeholder="Search by name, brand, or edition…" onkeydown="if(event.key==='Enter'){ event.preventDefault(); submitHomeSearch(); }" onsearch="submitHomeSearch()">
+    </div>
+    <button class="home-filter-btn" onclick="openHomeFilters()" aria-label="Open filters">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"></line><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle><line x1="4" y1="12" x2="20" y2="12"></line><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"></circle><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle></svg>
+    </button>
+  </div>
   <section class="offers-section" id="offersSection">
     <h2 class="offers-heading">Offers</h2>
     <div class="offers-strip">
@@ -1979,11 +2018,11 @@
 </div>
 
 <!-- Filters sheet -->
-<div class="overlay filter-drawer-overlay" id="filterOverlay" onclick="if(event.target===this) closeSheet('filterOverlay')">
+<div class="overlay filter-drawer-overlay" id="filterOverlay" onclick="if(event.target===this) cancelHomeFilters()">
   <div class="filter-panel" role="dialog" aria-modal="true" aria-labelledby="filterHeading">
     <div class="filter-panel-header">
       <h2 id="filterHeading">Filters</h2>
-      <button class="close-x" onclick="closeSheet('filterOverlay')" aria-label="Close">✕</button>
+      <button class="close-x" onclick="cancelHomeFilters()" aria-label="Close">✕</button>
     </div>
 
     <div class="filter-search-wrap">
@@ -2083,7 +2122,7 @@
 
     <div class="filter-sheet-actions">
       <button class="filter-clear-btn" onclick="clearAllFilters()">Clear all</button>
-      <button class="filter-apply-btn" onclick="closeSheet('filterOverlay')">Show results</button>
+      <button class="filter-apply-btn" onclick="confirmHomeFilters()">Show results</button>
     </div>
   </div>
 </div>
@@ -2573,6 +2612,11 @@ const COD_CHARGE_MAX = 500;
 // false = showing the products view (search/filters/grid) - reached via
 // Men's/Women's, an Offers tier, Discounts, or All Products.
 let onWelcomePage = true;
+// True only while the filter sheet is open because the Home page's
+// filter icon opened it (see openHomeFilters/confirmHomeFilters/
+// cancelHomeFilters) - lets that one sheet instance know whether
+// confirming should hand off to the Shop grid.
+let homeFiltersSession = false;
 let currentDedicatedView = null; // null while on Home; else "mens"|"womens"|"all"|"discounts"|"premium"|"new"|"offers1000"|"offers1500"|"offers2000"|"seasonal"
 // Whether the "Special Offers" hero card should currently be visible -
 // recomputed from the sheet on every load, see applyCatalogRows().
@@ -4065,18 +4109,9 @@ function closeAllOverlays(){
 function goHome(){
   closeAllOverlays();
   onWelcomePage = true;
-  searchTerm = "";
-  const searchInput = document.getElementById("searchInput");
-  if(searchInput) searchInput.value = "";
-  activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
-  activeGender = null;
-  priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all"; activeSort = "latest";
-  currentPage = 1;
-  document.getElementById("priceMinSlider").value = 0;
-  document.getElementById("priceMaxSlider").value = 10000;
-  document.getElementById("priceMinLabel").textContent = "₹0";
-  document.getElementById("priceMaxLabel").textContent = "₹10,000";
-  renderFilterStrip(); renderCategories(); renderFilterSheet(); renderSelectedFilters(); renderGrid();
+  const homeSearchInput = document.getElementById("homeSearchInput");
+  if(homeSearchInput) homeSearchInput.value = "";
+  resetFilterState();
   updateGenderHeroVisibility();
   if(location.hash) history.replaceState(null, "", location.pathname + location.search);
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4091,10 +4126,86 @@ function goHome(){
 function showAllProducts(presetCategory){
   closeAllOverlays();
   onWelcomePage = false;
+  resetFilterState();
+  if(presetCategory) { activeCategory = presetCategory; renderCategories(); renderGrid(); }
+  updateGenderHeroVisibility();
+  if(location.hash) history.replaceState(null, "", location.pathname + location.search);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// Home page search + filter row - both hand off into the same All
+// Products view/grid the rest of the site already uses, rather than
+// having their own separate results list. Nothing about the site's
+// structure changes: this is just a shortcut that fills in the real
+// search box / opens the real filter sheet on your behalf.
+function submitHomeSearch(){
+  const homeInput = document.getElementById("homeSearchInput");
+  const term = homeInput ? homeInput.value.trim() : "";
+  if(!term) return; // nothing typed - stay on Home, same as Filters with nothing picked
+  showAllProducts();
+  homeInput.value = "";
+  const searchInput = document.getElementById("searchInput");
+  if(searchInput) searchInput.value = term;
+  // Sets searchTerm/renders directly instead of going through onSearch()'s
+  // usual 150ms debounce (that debounce exists to smooth out live
+  // keystroke-by-keystroke typing on the Shop page's own search box -
+  // this is a single deliberate "Enter" press, so there's no rapid-fire
+  // typing to smooth out, and without this the shopper would see a
+  // flash of the full unfiltered grid for 150ms before it corrects
+  // itself to the actual search results.
+  clearTimeout(searchRenderTimer);
+  searchTerm = term.toLowerCase();
+  currentPage = 1;
+  renderGrid();
+  updateGenderHeroVisibility();
+}
+
+function openHomeFilters(){
+  homeFiltersSession = true;
+  openSheetById("filterOverlay");
+}
+
+// Home page filter sheet hand-off. Opening the sheet (openHomeFilters
+// above) never navigates by itself - it just opens the same filter sheet
+// on top of Home. Only these two exit paths matter:
+//  - "Show results" tapped        -> confirmHomeFilters(): whatever was
+//    picked is kept, and THAT'S the moment we hand off to the Shop grid.
+//  - X / tap-outside to dismiss   -> cancelHomeFilters(): sheet just
+//    closes and anything picked during this session is discarded, so
+//    Home is left exactly as it was before the icon was tapped - no
+//    surprise pre-filtered state waiting the next time Shop is opened.
+// Both are only active when the sheet was actually opened from Home
+// (homeFiltersSession); opening it the normal way from the Shop page's
+// own "Filters" button behaves exactly as before either way.
+function confirmHomeFilters(){
+  closeSheet("filterOverlay");
+  if(homeFiltersSession && onWelcomePage){
+    onWelcomePage = false;
+    renderGrid();
+    updateGenderHeroVisibility();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  homeFiltersSession = false;
+}
+
+function cancelHomeFilters(){
+  const wasHomeSession = homeFiltersSession;
+  closeSheet("filterOverlay");
+  homeFiltersSession = false;
+  if(wasHomeSession && onWelcomePage){
+    resetFilterState();
+  }
+}
+
+// Shared by showAllProducts() (which also navigates) and
+// cancelHomeFilters() (which deliberately doesn't) - resets every filter/
+// search/sort control back to its default without touching what page is
+// currently showing.
+function resetFilterState(){
   searchTerm = "";
   const searchInput = document.getElementById("searchInput");
   if(searchInput) searchInput.value = "";
-  activeCategory = presetCategory || "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
+  activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
   activeGender = null;
   priceMin = 0; priceMax = 10000; activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all"; activeSort = "latest";
   currentPage = 1;
@@ -4103,9 +4214,6 @@ function showAllProducts(presetCategory){
   document.getElementById("priceMinLabel").textContent = "₹0";
   document.getElementById("priceMaxLabel").textContent = "₹10,000";
   renderFilterStrip(); renderCategories(); renderFilterSheet(); renderSelectedFilters(); renderGrid();
-  updateGenderHeroVisibility();
-  if(location.hash) history.replaceState(null, "", location.pathname + location.search);
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function updateFilterBadge(){
