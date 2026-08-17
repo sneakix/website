@@ -1902,9 +1902,9 @@
         <div class="policy-num">5</div>
         <div>
           <h3 class="policy-title">Return and Refund Policy</h3>
-          <p>At SNEAKIX, most products are sold under a No Return &amp; No Refund policy. All sales are final once an order is placed.</p>
-          <p>However, selected products may be eligible for Returns or Cash on Delivery (COD). If applicable, this will be clearly stated on the product page.</p>
-          <p>If a product does not explicitly mention that Returns or COD are available, the standard No Return &amp; No Refund policy applies.</p>
+          <p>At SNEAKIX, all products are sold under a No Return &amp; No Refund policy. All sales are final once an order is placed.</p>
+          <p>However, selected products may be eligible for Cash on Delivery (COD). If applicable, this will be clearly stated on the product page.</p>
+          <p>If a product does not explicitly mention that COD is available, standard prepaid payment applies.</p>
         </div>
       </div>
 
@@ -2107,6 +2107,7 @@
         <div class="cart-subline"><span>Base Price</span><span id="sumBase"></span></div>
         <div class="cart-subline"><span>Shipping</span><span id="sumShip"></span></div>
         <div class="cart-total"><span>Grand Total</span><span id="sumTotal"></span></div>
+        <div class="cart-subline cart-cod-note" id="sumCodNote" style="display:none; justify-content:flex-end;"></div>
       </div>
 
       <button class="checkout-btn" id="checkoutBtn" onclick="openCheckout()" disabled>Place Order</button>
@@ -2170,8 +2171,9 @@
                       "ALL") in this cell instead to mark the ENTIRE
                       product sold out - disables Add to Cart and shows a
                       SOLD OUT tag, without listing every size.
-   codAvailable   -> true/false
-   returnAvailable-> true/false, shows "Return Available" on the item page
+   codAvailable   -> true/false, shows "Cash on Delivery Available" on the
+                      item page - only selected products support COD, not
+                      the whole catalog
    isNew          -> true/false, shows "NEW" tag + New Arrivals filter
    isSale         -> true/false, marketing-only SALE tag with no real price
                       cut. Ignored if marketPrice already produces a real
@@ -2240,9 +2242,10 @@ function getRowValue(r, ...keys){
   return "";
 }
 
-// NOTE: COD/Return availability is no longer shown as a badge on the grid
-// card or in the item-detail meta row - it now displays as full-text lines
-// below the Add to Cart button on the item detail page (see renderItemDetail).
+// NOTE: COD availability is no longer shown as a badge on the grid card -
+// it now displays as a full-text line below the Add to Cart button on the
+// item detail page (see renderItemDetail). Only selected products support
+// COD; if a product doesn't mention it, standard prepaid payment applies.
 function toIntList(v){
   if(!v) return [];
   return String(v).split(",").map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
@@ -2335,10 +2338,6 @@ function rowsToShoes(rows){
       // listed individually.
       soldOutAll: /^all$/i.test((r["Sold Out Sizes"] || "").trim()),
       codAvailable: toBool(r["COD Available"]),
-      // Tries the correct spelling first, then the common "Availiable"
-      // typo, so this keeps working even if the sheet column was typed
-      // either way.
-      returnAvailable: toBool(getRowValue(r, "Return Available", "Return Availiable", "ReturnAvailable")),
       isNew: toBool(r["New Arrival"]),
       isSale: toBool(r["Sale"]),
       // Per-product flag for the homepage "Special Offers" card - mark
@@ -2560,8 +2559,13 @@ function loadShoesFromSheet(){
 const SHIPPING_TIERS = {
   free: { label:"Free Shipping", desc:"Delivered in 4-7 days", cost:0 },
   fast: { label:"Fast Shipping (+₹300)", desc:"Delivered in 3-4 days", cost:300 },
-  cod:  { label:"Cash on Delivery", desc:"Shipping charge varies by weight - confirmed on WhatsApp", cost:null }
+  cod:  { label:"Cash on Delivery", desc:"COD charge: ₹350-500 (based on weight) - confirmed on WhatsApp", cost:null }
 };
+// Single source of truth for the COD charge range - referenced by the
+// shipping option description above, the cart totals box, AND the
+// WhatsApp order message, so all three always agree with each other.
+const COD_CHARGE_MIN = 350;
+const COD_CHARGE_MAX = 500;
 
 /* ============ App logic ============ */
 
@@ -2579,7 +2583,7 @@ let activeFilter = "all";       // all | new | sale | under2000 | under1500 | un
 let activeGender = null;        // null | "M" | "W" - independent of category/type now that Gender is its own sheet column
 let activeCategory = "All";     // shoe TYPE filter (Shoes/Boots/Ballet/Loafers/Formals/Sandals) - no longer encodes gender
 let activeType = "All";         // shoe type within a category, e.g. Sneakers | Sandals | Formal
-let activeAvailFilters = new Set(); // multi-select: 'cod' | 'return' - empty set = no availability filter applied
+let activeAvailFilters = new Set(); // 'cod' - empty set = no availability filter applied
 let activeQualities = new Set(); // multi-select: normalized quality keys ('7a'|'10a'|'ua'|'semiua')
 let activeBrands = new Set();   // multi-select: empty set = "All"
 let activeModels = new Set();   // multi-select: empty set = "All"
@@ -4139,7 +4143,6 @@ function renderSelectedFilters(){
     chips.push({ label: opt.filterLabel, onclick:`removeQualityFilter('${key}')` });
   });
   if(activeAvailFilters.has("cod")) chips.push({ label:"Cash on Delivery Available (COD)", onclick:`removeAvailFilter('cod')` });
-  if(activeAvailFilters.has("return")) chips.push({ label:"Return Available", onclick:`removeAvailFilter('return')` });
   if(priceMin > 0 || priceMax < 10000) chips.push({ label:`₹${priceMin}-₹${priceMax}`, onclick:`resetPriceFilter()` });
 
   if(chips.length === 0){ row.innerHTML = ""; return; }
@@ -4237,21 +4240,19 @@ function renderFilterSheet(){
     }
   }
 
-  // Availability filters (COD / Return) sit at the very bottom of the
-  // panel and are conditionally shown - only when at least one product
-  // in the catalog actually has that value set to TRUE.
+  // Availability filter (COD) sits at the very bottom of the panel and is
+  // conditionally shown - only when at least one product in the catalog
+  // actually has COD Available set to TRUE.
   const anyCod = SHOES.some(s => s.codAvailable);
-  const anyReturn = SHOES.some(s => s.returnAvailable);
   const availSection = document.getElementById("filterAccordion-avail");
   const availRow = document.getElementById("filterAvailRow");
   if(availSection && availRow){
-    if(!anyCod && !anyReturn){
+    if(!anyCod){
       availSection.style.display = "none";
     } else {
       availSection.style.display = "";
       const availChips = [];
-      if(anyCod) availChips.push(`<button class="filter-chip ${activeAvailFilters.has('cod')?'active':''}" onclick="setAvailFilter('cod')" aria-pressed="${activeAvailFilters.has('cod')}">Cash on Delivery Available (COD)</button>`);
-      if(anyReturn) availChips.push(`<button class="filter-chip ${activeAvailFilters.has('return')?'active':''}" onclick="setAvailFilter('return')" aria-pressed="${activeAvailFilters.has('return')}">Return Available</button>`);
+      availChips.push(`<button class="filter-chip ${activeAvailFilters.has('cod')?'active':''}" onclick="setAvailFilter('cod')" aria-pressed="${activeAvailFilters.has('cod')}">Cash on Delivery Available (COD)</button>`);
       availRow.innerHTML = availChips.join("");
     }
   }
@@ -4268,7 +4269,7 @@ function getFilteredShoes(){
     // to begin with, so a search there naturally covers the whole catalog;
     // inside Men's/Women's/any other filter, search stays scoped to it.
     if(searchTerm){
-      const availKeywords = `${shoe.codAvailable ? 'cod cash on delivery cash on delivery available' : ''} ${shoe.returnAvailable ? 'return return available' : ''}`;
+      const availKeywords = shoe.codAvailable ? 'cod cash on delivery cash on delivery available' : '';
       const haystack = `${shoe.name} ${shoe.brand} ${shoe.category} ${shoe.sizes} ${detectModel(shoe.name)} ${availKeywords}`.toLowerCase();
       if(!haystack.includes(searchTerm)) return false;
     }
@@ -4293,7 +4294,6 @@ function getFilteredShoes(){
     }
     if(activeQualities.size > 0 && !activeQualities.has(normalizeQuality(shoe.quality))) return false;
     if(activeAvailFilters.has("cod") && !shoe.codAvailable) return false;
-    if(activeAvailFilters.has("return") && !shoe.returnAvailable) return false;
     return true;
   }).sort((a, b) => {
     if(activeSort === "price_low") return a.price - b.price;
@@ -4803,9 +4803,8 @@ function renderItemDetail(){
         </div>
       </div>
 
-      ${(shoe.codAvailable || shoe.returnAvailable) ? `<div class="item-detail-avail-list">
-        ${shoe.codAvailable ? '<div class="avail-line">✓ Cash on Delivery Available (COD)</div>' : ''}
-        ${shoe.returnAvailable ? '<div class="avail-line">✓ Return Available</div>' : ''}
+      ${shoe.codAvailable ? `<div class="item-detail-avail-list">
+        <div class="avail-line">✓ Cash on Delivery Available (COD)</div>
       </div>` : ''}
 
       <div class="item-detail-desc">${[qualityLabel(shoe.quality), ...buildDescriptionLines(shoe.description)].filter(Boolean).map(line => `<div>${escapeHtml(line)}</div>`).join("")}</div>
@@ -5314,7 +5313,20 @@ function renderTotals(){
   const shipLabel = tier.cost === null ? "To be confirmed" : (tier.cost === 0 ? "Free" : `₹${tier.cost}`);
   document.getElementById("sumBase").textContent = `₹${base}`;
   document.getElementById("sumShip").textContent = shipLabel;
-  document.getElementById("sumTotal").textContent = tier.cost === null ? `₹${base} + COD charge` : `₹${base + tier.cost}`;
+  document.getElementById("sumTotal").textContent = tier.cost === null ? `₹${base} + COD` : `₹${base + tier.cost}`;
+
+  // COD's exact shipping cost depends on weight, so the Grand Total above
+  // reads as a clear "Price + COD" (not a confusing two-number range) -
+  // this note underneath is where the actual ₹350-500 range lives instead.
+  const codNote = document.getElementById("sumCodNote");
+  if(codNote){
+    if(tier.cost === null){
+      codNote.textContent = `COD charge: ₹${COD_CHARGE_MIN}-₹${COD_CHARGE_MAX}`;
+      codNote.style.display = "flex";
+    } else {
+      codNote.style.display = "none";
+    }
+  }
 }
 
 function removeFromCart(idx){
@@ -5362,8 +5374,8 @@ function submitOrder(e){
 
   const base = cart.reduce((sum,i)=>sum+i.price*i.qty, 0);
   const tier = SHIPPING_TIERS[selectedShipping];
-  const shipLabel = tier.cost === null ? "Cash on Delivery (amount to be confirmed based on weight)" : (tier.cost === 0 ? "Free (4-7 days)" : `Fast Shipping ₹300/- (3-4 days)`);
-  const grandTotal = tier.cost === null ? `₹${base}/- + COD charge` : `₹${base + tier.cost}/-`;
+  const shipLabel = tier.cost === null ? `Cash on Delivery (₹${COD_CHARGE_MIN}-₹${COD_CHARGE_MAX} based on weight)` : (tier.cost === 0 ? "Free (4-7 days)" : `Fast Shipping ₹300/- (3-4 days)`);
+  const grandTotal = tier.cost === null ? `₹${base}/- + COD (₹${COD_CHARGE_MIN}-₹${COD_CHARGE_MAX})` : `₹${base + tier.cost}/-`;
 
   let msg = `*${cart.length} PAIR${cart.length>1?'S':''} SHOES ORDER*\n\n`;
   cart.forEach((item, i) => {
