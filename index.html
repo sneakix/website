@@ -40,7 +40,7 @@
   // paint - otherwise the browser briefly shows the full homepage (hero
   // cards, category chips, grid) before the data finishes loading and the
   // product overlay opens on top of it, which reads as a laggy flash.
-  if(/^#shoe-\d+$/.test(location.hash)){
+  if(/^#shoe-\d+$/.test(location.hash) || /^#(mens|womens|premium|offers|offers-1000|offers-1500|offers-2000|seasonal-offers|all-products)$/.test(location.hash)){
     document.documentElement.classList.add("deep-link-pending");
   }
 </script>
@@ -317,6 +317,7 @@
   .search-wrap{
     padding:14px 16px 0;
     background:var(--paper);
+    scroll-margin-top:calc(var(--header-h) + var(--secondary-nav-h) + var(--breadcrumb-h));
   }
   .search-box{
     display:flex; align-items:center; gap:9px;
@@ -509,28 +510,39 @@
   .secondary-nav::-webkit-scrollbar{ display:none; }
   .secondary-nav-btn{
     flex:none;
-    padding:8px 14px;
+    position:relative;
+    padding:8px 4px;
     min-height:34px;
-    font-size:11.5px;
+    font-size:12.5px;
     font-weight:700;
     text-transform:uppercase;
     letter-spacing:0.03em;
-    border:1.5px solid var(--line);
-    border-radius:var(--radius-pill);
-    background:var(--panel);
+    border:none;
+    background:transparent;
     color:var(--ink);
     cursor:pointer;
     white-space:nowrap;
     font-family:inherit;
-    transition:background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+    transition:color var(--dur-fast) var(--ease);
   }
-  .secondary-nav-btn:active{ transform:scale(0.96); }
-  .secondary-nav-btn.active{ background:var(--ink); border-color:var(--ink); color:var(--paper); }
+  .secondary-nav-btn::after{
+    content:"";
+    position:absolute;
+    left:4px; right:4px; bottom:2px;
+    height:2px;
+    background:var(--gold);
+    transform:scaleX(0);
+    transform-origin:center;
+    transition:transform var(--dur-fast) var(--ease);
+  }
+  .secondary-nav-btn:active{ opacity:0.7; }
+  .secondary-nav-btn.active{ color:var(--gold); }
+  .secondary-nav-btn.active::after{ transform:scaleX(1); }
   .secondary-nav-back{
-    background:var(--panel); border-color:var(--panel); font-weight:800;
+    color:var(--ink); font-weight:800;
     overflow:hidden; white-space:nowrap;
     max-width:100px; opacity:1; margin-right:0;
-    border-left-width:1.5px; border-right-width:1.5px;
+    padding-left:4px; padding-right:14px;
     /* This (the non-.collapsed state) is the target style used when the
        button is EXPANDING - i.e. leaving Home for any other page - so
        these durations control that direction only. Slower/more visible
@@ -541,13 +553,12 @@
       opacity 550ms cubic-bezier(0,0,0.2,1),
       padding-left 600ms cubic-bezier(0,0,0.2,1),
       padding-right 600ms cubic-bezier(0,0,0.2,1),
-      border-left-width 600ms cubic-bezier(0,0,0.2,1),
-      border-right-width 600ms cubic-bezier(0,0,0.2,1),
       margin-right 600ms cubic-bezier(0,0,0.2,1),
-      background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+      color var(--dur-fast) var(--ease);
   }
-  .secondary-nav-back:hover{ background:var(--panel-hover); border-color:var(--panel-hover); }
-  /* Collapsed = on the Welcome Page. Animating max-width/padding/border
+  .secondary-nav-back:hover{ color:var(--gold); }
+  .secondary-nav-back::after{ display:none; } /* Back never shows the active underline */
+  /* Collapsed = on the Welcome Page. Animating max-width/padding
      (not display:none, which can't transition, and not transform, which
      wouldn't affect layout) so the button genuinely slides away to
      nothing and Home/Shop/etc. reflow left to fill the space - and
@@ -561,7 +572,6 @@
   .secondary-nav-back.collapsed{
     max-width:0; opacity:0;
     padding-left:0; padding-right:0;
-    border-left-width:0; border-right-width:0;
     margin-right:-8px; /* cancels the row's flex gap so no stray gap is left before Home */
     pointer-events:none;
     transition:
@@ -569,10 +579,8 @@
       opacity 250ms cubic-bezier(0,0,0.2,1),
       padding-left 300ms cubic-bezier(0,0,0.2,1),
       padding-right 300ms cubic-bezier(0,0,0.2,1),
-      border-left-width 300ms cubic-bezier(0,0,0.2,1),
-      border-right-width 300ms cubic-bezier(0,0,0.2,1),
       margin-right 300ms cubic-bezier(0,0,0.2,1),
-      background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+      color var(--dur-fast) var(--ease);
   }
 
   /* ---------- Breadcrumb trail ---------- */
@@ -1801,7 +1809,7 @@
 <div class="offers-tier-strip" id="offersTierStrip" style="display:none"></div>
 <div class="cat-strip" id="catStrip" role="group" aria-label="Categories"></div>
 
-<div class="search-wrap">
+<div class="search-wrap" id="searchWrap">
   <div class="search-row">
     <div class="search-box">
       <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
@@ -2162,16 +2170,16 @@
     <button class="sheet-back-link" onclick="backToCart()">← Back to cart</button>
     <h2 id="checkoutHeading">Delivery Details</h2>
     <form id="checkoutForm" onsubmit="submitOrder(event)">
-      <div class="field"><label for="f_name">Full Name</label><input required id="f_name" name="name" autocomplete="name" placeholder="Your name"></div>
+      <div class="field"><label for="f_name">Full Name</label><input required id="f_name" name="name" autocomplete="shipping name" placeholder="Your name"></div>
       <div class="field"><label for="f_insta">Instagram Handle <span class="optional">(optional)</span></label><input id="f_insta" name="insta" placeholder="@yourhandle"></div>
-      <div class="field"><label for="f_address">Address (House / Street)</label><textarea required id="f_address" name="address" autocomplete="street-address" rows="2" placeholder="House no, street, area"></textarea></div>
+      <div class="field"><label for="f_address">Address (House / Street)</label><textarea required id="f_address" name="address" autocomplete="shipping street-address" rows="2" placeholder="House no, street, area"></textarea></div>
       <div class="field"><label for="f_landmark">Landmark <span class="optional">(optional)</span></label><input id="f_landmark" name="landmark" placeholder="Nearby landmark"></div>
-      <div class="field"><label for="f_town">Town / City</label><input required id="f_town" name="town" autocomplete="address-level2" placeholder="Town"></div>
+      <div class="field"><label for="f_town">Town / City</label><input required id="f_town" name="town" autocomplete="shipping address-level2" placeholder="Town"></div>
       <div class="field"><label for="f_district">District</label><input required id="f_district" name="district" placeholder="District"></div>
-      <div class="field"><label for="f_state">State</label><input required id="f_state" name="state" autocomplete="address-level1" placeholder="State"></div>
-      <div class="field"><label for="f_pin">PIN Code</label><input required id="f_pin" name="pin" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="postal-code" placeholder="6-digit PIN"></div>
-      <div class="field"><label for="f_phone1">Contact No. 1</label><input required id="f_phone1" name="phone1" type="tel" inputmode="numeric" autocomplete="tel" pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number"></div>
-      <div class="field"><label for="f_phone2">Contact No. 2 <span class="optional">(optional)</span></label><input id="f_phone2" name="phone2" type="tel" inputmode="numeric" autocomplete="tel" pattern="[0-9]{10}" maxlength="10" placeholder="Backup number"></div>
+      <div class="field"><label for="f_state">State</label><input required id="f_state" name="state" autocomplete="shipping address-level1" placeholder="State"></div>
+      <div class="field"><label for="f_pin">PIN Code</label><input required id="f_pin" name="pin" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="shipping postal-code" placeholder="6-digit PIN"></div>
+      <div class="field"><label for="f_phone1">Contact No. 1</label><input required id="f_phone1" name="phone1" type="tel" inputmode="numeric" autocomplete="shipping tel" pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number"></div>
+      <div class="field"><label for="f_phone2">Contact No. 2 <span class="optional">(optional)</span></label><input id="f_phone2" name="phone2" type="tel" inputmode="numeric" autocomplete="off" pattern="[0-9]{10}" maxlength="10" placeholder="Backup number"></div>
       <div class="field"><label for="f_remarks">Remarks / Additional Notes <span class="optional">(optional)</span></label><textarea id="f_remarks" name="remarks" rows="2" placeholder="Additional Information or Queries"></textarea></div>
       <button type="submit" class="wa-submit">Send Order on WhatsApp</button>
       <div class="form-note">Tapping this opens WhatsApp with your full order pre-filled. Nothing is charged here - payment is arranged directly in chat.</div>
@@ -2478,6 +2486,14 @@ function applyCatalogRows(rawRows, isLiveFetch){
         applyViewFromHash(h);
       }
     }
+    // routeToShoeFromHashOnLoad() only clears deep-link-pending for the
+    // #shoe-<id> path. Section hashes (#mens, #offers, etc.) route through
+    // applyViewFromHash() above instead, so clear the gate here too once
+    // that routing (and the grid re-render it triggers) has finished -
+    // otherwise the raw pre-JS nav state (Back button collapsed) paints
+    // first on a slow connection, same flash the product-hash gate exists
+    // to prevent.
+    document.documentElement.classList.remove("deep-link-pending");
   }
 
   // Now that the cart survives across visits (see cart persistence below),
@@ -4257,7 +4273,7 @@ function updateFilterBadge(){
 // Shows every active filter (brand, model, type, size, sort, price) as a
 // removable chip so the shopper can see everything that's narrowing the
 // grid at a glance and clear any one of them individually.
-const SORT_LABELS = { latest:"Default", newest:"Newest", az:"Names: A-Z", price_high:"Price: High to Low", price_low:"Price: Low to High" };
+const SORT_LABELS = { latest:"Featured", newest:"Newest", az:"Names: A-Z", price_high:"Price: High to Low", price_low:"Price: Low to High" };
 // Single source of truth for the 4 sort options (key -> label). Both the
 // full Filters sheet and the standalone Sort sheet read from this, so the
 // wording can never drift out of sync between the two places it's shown.
@@ -4499,7 +4515,12 @@ function goToPage(p){
   if(p < 1 || p === currentPage) return;
   currentPage = p;
   renderGrid();
-  document.getElementById("grid").scrollIntoView({ behavior:"smooth", block:"start" });
+  // Scroll to the search bar rather than the absolute top of the page -
+  // the shopper just paged forward within the same listing, so jumping
+  // past the hero/category chips back to the very top would be jarring;
+  // landing at the search bar keeps them oriented right above the grid.
+  const anchor = document.getElementById("searchWrap") || document.getElementById("grid");
+  anchor.scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
 // Warms the browser's cache for the *next* "Show More" batch - so when the
