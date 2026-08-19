@@ -2722,24 +2722,6 @@ let currentFullPage = null; // 'size-guide' | 'policies' | null - declared early
 // actually return you to where you were instead of the top of the grid.
 let savedBackgroundScrollY = null;
 
-// Jumps the page to a saved position with zero animation, regardless of
-// the site-wide `scroll-behavior: smooth` on <html> - a plain
-// window.scrollTo(x,y) would inherit that and visibly animate, which is
-// exactly the wrong feel for "restore where you were" (it should look
-// like nothing moved, not like a scroll happened). Also deferred one
-// frame so it runs after the browser has actually finished re-laying-out
-// the grid now that it's visible again - restoring immediately in the
-// same tick the display flips back to "" can get clamped against the
-// still-collapsed layout from a moment ago and land in the wrong spot.
-function restoreBackgroundScroll(){
-  if(savedBackgroundScrollY === null) return;
-  const y = savedBackgroundScrollY;
-  savedBackgroundScrollY = null;
-  requestAnimationFrame(() => {
-    window.scrollTo({ top: y, left: 0, behavior: "instant" });
-  });
-}
-
 document.getElementById("hamburgerWaBtn").href = `https://wa.me/${WHATSAPP_NUMBER}`;
 document.getElementById("footerContactUs").href = `https://wa.me/${WHATSAPP_NUMBER}`;
 document.getElementById("footerFacebook").href = FACEBOOK_URL;
@@ -4728,7 +4710,10 @@ function closeCurrentFullPage(){
   updateBodyScrollLock();
   syncBackgroundInertState();
   updateGenderHeroVisibility(); // restores genderHero/productsView to whatever onWelcomePage says it should be
-  restoreBackgroundScroll();
+  if(savedBackgroundScrollY !== null){
+    window.scrollTo(0, savedBackgroundScrollY);
+    savedBackgroundScrollY = null;
+  }
 }
 
 window.addEventListener("popstate", () => {
@@ -4847,7 +4832,10 @@ function closeItemDetail(){
   updateGenderHeroVisibility(); // restores genderHero/productsView, nav highlighting, and the breadcrumb together
   suppressHashRoute = true;
   history.replaceState(null, "", location.pathname + location.search);
-  restoreBackgroundScroll();
+  if(savedBackgroundScrollY !== null){
+    window.scrollTo(0, savedBackgroundScrollY);
+    savedBackgroundScrollY = null;
+  }
 }
 
 function itemDetailPhotoStep(direction){
