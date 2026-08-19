@@ -374,13 +374,13 @@
     display:flex; gap:8px;
     padding:14px 16px 8px;
     scrollbar-width:none;
-    overflow-x:visible; flex-wrap:wrap;
   }
   .filter-strip::-webkit-scrollbar{display:none;}
   /* Sort/Filters row: two equal-width, clearly visible buttons - replaces
      the old single small "sort pill" that was easy to miss. Any legacy
      quick-filter pills (currently unused, see renderFilterStrip) still
      append after these two and keep scrolling behavior if ever reintroduced. */
+  .filter-strip{ overflow-x:visible; flex-wrap:wrap; }
   .strip-btn{
     flex:1 1 0; min-width:0;
     display:flex; align-items:center; justify-content:center; gap:6px;
@@ -2712,15 +2712,6 @@ const PAGE_SIZE = 32;
 let currentPage = 1;
 let preloadNextBatchTimer = null;
 let currentFullPage = null; // 'size-guide' | 'policies' | null - declared early since closeAllOverlays() (used throughout) reads it
-// Set right before genderHero/productsView get display:none'd for a
-// product page or Size Chart/Policies (see openItemDetail/showFullPage).
-// Hiding them collapses the document's scrollable height, which makes
-// the browser silently reset window.scrollY on its own - there's no
-// explicit "scroll to top" call to find, it just falls out of the grid
-// no longer being there to scroll. Saving the value here and restoring
-// it in closeItemDetail()/closeCurrentFullPage() is what makes Back
-// actually return you to where you were instead of the top of the grid.
-let savedBackgroundScrollY = null;
 
 document.getElementById("hamburgerWaBtn").href = `https://wa.me/${WHATSAPP_NUMBER}`;
 document.getElementById("footerContactUs").href = `https://wa.me/${WHATSAPP_NUMBER}`;
@@ -3431,12 +3422,10 @@ function renderFilterStrip(){
   const strip = document.getElementById("filterStrip");
 
   // "All" is intentionally not a pill here - the "All" chip already in the
-  // category row above does the exact same thing. "Under ₹2000" and
-  // "Premium Shoes" moved to the homepage hero cards/nav instead of
-  // living here as pills. "New Arrivals" and "Sale" don't have a
-  // dedicated entry point at all anymore - isNew/isSale only drive the
-  // "NEW"/"SALE" badge shown on a product's own card now, nothing filters
-  // by them.
+  // category row above does the exact same thing. "Under ₹2000",
+  // "Premium Shoes", "New Arrivals" and "Sale" all moved exclusively to
+  // the homepage hero cards / the hamburger menu, so none of them are
+  // duplicated here either.
   const filters = [];
 
   // Sort and Filters as two full-size, clearly visible buttons (not a
@@ -4666,12 +4655,6 @@ function openPoliciesPage(){
 
 function showFullPage(pageKey, elId, hash){
   closeAllOverlays(); // closes hamburger/cart/etc.; does not touch currentFullPage
-  // Same guard as openItemDetail() - only capture on a genuinely fresh
-  // hide, not when hopping directly between Size Chart and Policies
-  // (where the grid is already hidden from the first hop).
-  if(itemDetailShoeId === null && currentFullPage === null){
-    savedBackgroundScrollY = window.scrollY;
-  }
   document.getElementById("sizeGuidePage")?.classList.remove("open");
   document.getElementById("policiesPage")?.classList.remove("open");
   document.getElementById(elId)?.classList.add("open");
@@ -4710,10 +4693,6 @@ function closeCurrentFullPage(){
   updateBodyScrollLock();
   syncBackgroundInertState();
   updateGenderHeroVisibility(); // restores genderHero/productsView to whatever onWelcomePage says it should be
-  if(savedBackgroundScrollY !== null){
-    window.scrollTo(0, savedBackgroundScrollY);
-    savedBackgroundScrollY = null;
-  }
 }
 
 window.addEventListener("popstate", () => {
@@ -4782,14 +4761,6 @@ function openCartItemDetail(shoeId){
 function openItemDetail(shoeId){
   const shoe = SHOES.find(s => s.id === shoeId);
   if(!shoe) return;
-  // Only capture if the grid is currently actually visible - if it's
-  // already hidden (e.g. opening a "you may also like" card from within
-  // another product's own detail page), it's already collapsed and
-  // window.scrollY would just be whatever leftover/near-0 value the
-  // browser clamped it to, not the real position to restore later.
-  if(itemDetailShoeId === null && currentFullPage === null){
-    savedBackgroundScrollY = window.scrollY;
-  }
   itemDetailShoeId = shoeId;
   itemDetailPhotoIndex = 0;
   renderItemDetail();
@@ -4832,10 +4803,6 @@ function closeItemDetail(){
   updateGenderHeroVisibility(); // restores genderHero/productsView, nav highlighting, and the breadcrumb together
   suppressHashRoute = true;
   history.replaceState(null, "", location.pathname + location.search);
-  if(savedBackgroundScrollY !== null){
-    window.scrollTo(0, savedBackgroundScrollY);
-    savedBackgroundScrollY = null;
-  }
 }
 
 function itemDetailPhotoStep(direction){
