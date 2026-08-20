@@ -2473,8 +2473,8 @@ function applyCatalogRows(rawRows, isLiveFetch){
     // The item detail page is already open - almost certainly because the
     // instant cache render just opened it via a WhatsApp deep link. Refresh
     // its content in place with the fresh data instead of re-running hash
-    // routing, which would call openItemDetail() again and push a second,
-    // duplicate history entry for the same product.
+    // routing, which openItemDetail()'s own suppressHashRoute guard would
+    // otherwise silently swallow on this second pass.
     if(SHOES.some(s => s.id === itemDetailShoeId)) renderItemDetail();
     else closeItemDetail();
   } else {
@@ -2484,18 +2484,16 @@ function applyCatalogRows(rawRows, isLiveFetch){
       const h = location.hash;
       if(h && h !== "#size-guide" && h !== "#policies" && !/^#shoe-\d+$/.test(h)){
         applyViewFromHash(h);
-        // Section hashes (#mens, #offers, etc.) always finish routing
-        // synchronously right here (unlike a #shoe-<id> hash, which can
-        // still be waiting on the live fetch to resolve - see the
-        // cache-miss branch inside routeToShoeFromHashOnLoad(), which
-        // deliberately leaves the gate up in that case) - so it's safe
-        // to clear the gate immediately after. Scoped to this branch
-        // only: clearing it unconditionally here would strip it out from
-        // under a still-pending product deep link on a slow connection,
-        // flashing the raw pre-JS state before the product actually opens.
-        document.documentElement.classList.remove("deep-link-pending");
       }
     }
+    // routeToShoeFromHashOnLoad() only clears deep-link-pending for the
+    // #shoe-<id> path. Section hashes (#mens, #offers, etc.) route through
+    // applyViewFromHash() above instead, so clear the gate here too once
+    // that routing (and the grid re-render it triggers) has finished -
+    // otherwise the raw pre-JS nav state (Back button collapsed) paints
+    // first on a slow connection, same flash the product-hash gate exists
+    // to prevent.
+    document.documentElement.classList.remove("deep-link-pending");
   }
 
   // Now that the cart survives across visits (see cart persistence below),
@@ -2546,18 +2544,7 @@ function reconcileCartWithCatalog(){
 // brand-new product the stale cache just doesn't know about yet - the
 // live fetch moments later gets the final say. Only the live-fetch pass
 // gives up and falls back to the homepage.
-// Guards against routing the initial #shoe-<id> deep link twice - this
-// function runs once for the cache pass and again for the live-fetch
-// pass (see applyCatalogRows()). If the cache pass already found and
-// opened the product, openItemDetail() below now does a real
-// history.pushState() (Phase 2), so letting the live-fetch pass call it
-// again would push a second, duplicate entry for the same product.
-let initialDeepLinkRouted = false;
 function routeToShoeFromHashOnLoad(isLiveFetch){
-  if(initialDeepLinkRouted){
-    document.documentElement.classList.remove("deep-link-pending");
-    return;
-  }
   const match = location.hash.match(/^#shoe-(\d+)$/);
   if(!match){
     document.documentElement.classList.remove("deep-link-pending");
@@ -2566,16 +2553,12 @@ function routeToShoeFromHashOnLoad(isLiveFetch){
   const id = Number(match[1]);
   const shoe = SHOES.find(s => s.id === id);
   if(shoe){
-    initialDeepLinkRouted = true;
-    // true = fresh deep link - openItemDetail() establishes a clean grid
-    // baseline entry before pushing this product's entry (see there).
-    openItemDetail(shoe.id, true);
+    openItemDetail(shoe.id);
     document.documentElement.classList.remove("deep-link-pending");
   } else if(isLiveFetch){
     // Genuinely doesn't exist even in fresh data - drop the hash and fall
     // back to a normal homepage instead of leaving the shopper stuck on
     // the "Opening product…" loader forever.
-    initialDeepLinkRouted = true;
     history.replaceState(null, "", location.pathname + location.search);
     document.documentElement.classList.remove("deep-link-pending");
   }
@@ -3936,16 +3919,7 @@ function applyViewFromHash(hash){
 
 window.addEventListener("popstate", () => {
   const hash = location.hash;
-  // itemDetailShoeId still reflects the product that's about to be
-  // closed/stepped-back-from here - popstate always fires *before*
-  // hashchange, so the product-close/step-back handling in
-  // routeToShoeFromHash() (bound to hashchange) hasn't run yet. Skip so
-  // the two listeners don't double-fire against the same navigation -
-  // e.g. backing out of a product straight onto "#mens" would otherwise
-  // also re-run applyViewFromHash("#mens") here and reset filters/page
-  // state that closeItemDetailFromHistory() is about to correctly leave
-  // untouched.
-  if(itemDetailShoeId !== null || /^#shoe-\d+$/.test(hash) || hash === "#size-guide" || hash === "#policies" || currentFullPage) return;
+  if(/^#shoe-\d+$/.test(hash) || hash === "#size-guide" || hash === "#policies" || currentFullPage) return;
   applyViewFromHash(hash);
 });
 
@@ -4680,39 +4654,31 @@ function renderGrid(){
 let itemDetailShoeId = null;
 let itemDetailPhotoIndex = 0;
 
-// Hash-driven sync for product detail - fires on hashchange, which only
-// fires on REAL navigation (browser/device back-forward, or a genuine
-// hash-changing link). Our own history.pushState()/replaceState() calls
-// (in openItemDetail(), closeItemDetail() etc.) never fire hashchange or
-// popstate - spec-guaranteed, not something to guard against - so this
-// function only ever runs for actual back/forward across a chain of
-// products, never as a side effect of our own writes.
+// True right after we set the hash ourselves (opening/closing product
+// detail), so the resulting hashchange event doesn't re-trigger routing.
+let suppressHashRoute = false;
+
+// Opens the exact product a #shoe-<id> URL points to, directly via the
+// full detail overlay - not by scrolling to an in-grid anchor, which can
+// silently fail to exist if that product is filtered out, paginated
+// beyond the current "Show More" position, or sorted elsewhere. This is
+// what makes a shared/WhatsApp product link reliably open the correct
+// product page every time, regardless of the site's current filter state.
 function routeToShoeFromHash(){
+  if(suppressHashRoute){ suppressHashRoute = false; return; }
   const match = location.hash.match(/^#shoe-(\d+)$/);
   if(!match){
-    // Backed all the way out of the product chain (or forward past it)
-    // onto a non-product hash - close the overlay via the pure,
-    // history-untouched cleanup path; the browser already moved the URL
-    // to wherever it now is, so writing history again here would fight
-    // that (see closeItemDetailFromHistory()).
-    if(itemDetailShoeId !== null){
-      closeItemDetailFromHistory();
-    }
     document.documentElement.classList.remove("deep-link-pending");
     return;
   }
   const id = Number(match[1]);
   const shoe = SHOES.find(s => s.id === id);
   if(shoe){
-    // Render only - do NOT call openItemDetail() here, that would push
-    // a second history entry on top of the one the browser just landed
-    // on and re-save scroll position mid-chain.
-    renderProductDetailView(id);
+    openItemDetail(shoe.id);
   } else {
     // The linked product no longer exists (removed from the sheet) -
     // drop the hash and fall back to a normal homepage rather than
     // leaving the shopper stuck on the "Opening product…" loader forever.
-    if(itemDetailShoeId !== null) closeItemDetailFromHistory();
     history.replaceState(null, "", location.pathname + location.search);
   }
   document.documentElement.classList.remove("deep-link-pending");
@@ -4720,11 +4686,11 @@ function routeToShoeFromHash(){
 window.addEventListener("hashchange", routeToShoeFromHash);
 
 // ---------- Size Guide / Policies: full-page navigation ----------
-// Same spirit as product detail (see openItemDetail() / routeToShoeFromHash()
-// above): these two pages are genuinely navigated *to*, so they use
-// pushState and rely on popstate to close again - this is what makes the
-// real browser/device back button work here, not just the in-page
-// "← Back" button.
+// Unlike product detail (which uses history.replaceState - no back-stack
+// entry, since a product page is meant to just BE the current URL), these
+// two pages are genuinely navigated *to*, so they use pushState and rely
+// on popstate to close again - this is what makes the real browser/device
+// back button work here, not just the in-page "← Back" button.
 // (currentFullPage itself is declared earlier, near the other top-level
 // state, since closeAllOverlays() reads it and is called from many places.)
 
@@ -4849,15 +4815,17 @@ function openCartItemDetail(shoeId){
   openItemDetail(shoeId);
 }
 
-// Pure render/DOM/state for the product detail overlay - no history
-// writes, no scroll-position side effects. This is the shared core used
-// by both a fresh open (openItemDetail() below) and a hash-driven sync
-// (routeToShoeFromHash(), when the browser's own back/forward lands on
-// a different product mid-chain and only needs a re-render, not a new
-// history entry).
-function renderProductDetailView(shoeId){
+function openItemDetail(shoeId){
   const shoe = SHOES.find(s => s.id === shoeId);
-  if(!shoe) return false;
+  if(!shoe) return;
+  // Only capture if the grid is currently actually visible - if it's
+  // already hidden (e.g. opening a "you may also like" card from within
+  // another product's own detail page), it's already collapsed and
+  // window.scrollY would just be whatever leftover/near-0 value the
+  // browser clamped it to, not the real position to restore later.
+  if(itemDetailShoeId === null && currentFullPage === null){
+    savedBackgroundScrollY = window.scrollY;
+  }
   itemDetailShoeId = shoeId;
   itemDetailPhotoIndex = 0;
   renderItemDetail();
@@ -4869,90 +4837,37 @@ function renderProductDetailView(shoeId){
   renderBreadcrumb();
   updateSecondaryNavActiveOnly();
   trackEvent('view_item', { item_id: shoe.id, item_name: shoe.name, item_brand: shoe.brand, price: shoe.price });
-  return true;
-}
-
-// Fresh, user-initiated open - a product card click, a related-product
-// tap from within another product's own detail page, a cart line click,
-// or (via routeToShoeFromHashOnLoad(), with isFreshDeepLink true) the
-// very first #shoe-<id> deep-link load. Always renders AND pushes a
-// real, poppable history entry (Phase 2 - previously replaceState, which
-// meant the phone's actual back button skipped straight past product
-// views instead of closing them one at a time). The other half of this
-// split lives in routeToShoeFromHash(): landing on a product hash via
-// the browser's OWN back/forward must render only, never push again.
-function openItemDetail(shoeId, isFreshDeepLink){
-  const shoe = SHOES.find(s => s.id === shoeId);
-  if(!shoe) return;
-  // Only capture if the grid is currently actually visible - if it's
-  // already hidden (e.g. opening a "you may also like" card from within
-  // another product's own detail page), it's already collapsed and
-  // window.scrollY would just be whatever leftover/near-0 value the
-  // browser clamped it to, not the real position to restore later.
-  if(itemDetailShoeId === null && currentFullPage === null){
-    savedBackgroundScrollY = window.scrollY;
-  }
-  // Deep-link safety net: a shared/bookmarked product link opens with no
-  // prior in-app navigation in this tab, so there's no "grid" entry
-  // underneath it in history yet - pressing Back would exit the site
-  // entirely instead of showing the grid. Replace the current (raw,
-  // still-hashed) entry with a clean baseline first, so the product's
-  // own pushState below always has somewhere in-site to land on.
-  if(isFreshDeepLink){
-    history.replaceState(null, "", location.pathname + location.search);
-  }
-  if(!renderProductDetailView(shoeId)) return;
   // Keep the URL in sync so this exact product can always be re-opened
   // (bookmarked, shared, or reached via a WhatsApp order link) straight
   // back to its own detail page.
-  history.pushState({ itemDetail: shoe.id }, "", `#shoe-${shoe.id}`);
+  suppressHashRoute = true;
+  history.replaceState(null, "", `#shoe-${shoe.id}`);
 }
 
-// The nav's in-app Back button, while viewing a product OR a full page
-// (Size Chart/Policies), now always goes through history.back() - the
-// identical path the phone/browser's real back button uses. Both entry
-// points can never drift out of sync this way: neither one closes
-// anything itself - it's always the resulting popstate/hashchange
-// handling (routeToShoeFromHash(), the full-page popstate listener) that
-// actually does the closing/stepping-back.
+// The nav's Back button needs special handling for product detail:
+// opening a product uses history.replaceState() (not pushState - so
+// clicking through many products from search/a grid doesn't pile up a
+// huge history stack), which means a plain history.back() would skip
+// straight past the grid state instead of returning to it. Everywhere
+// else (sections, Size Chart, Policies) a real history entry already
+// exists, so plain history.back() already does the right thing there.
 function navBackClick(){
-  history.back();
+  if(itemDetailShoeId !== null){
+    closeItemDetail();
+  } else {
+    history.back();
+  }
 }
 
-// In-app cleanup for the product detail overlay - used by
-// closeAllOverlays() (Home/gender/etc. navigation elsewhere in the app)
-// and the global Escape handler, both of which call this unconditionally
-// regardless of whether a product is actually open. Early-return when
-// it isn't: nothing to close, and unconditionally stripping the hash
-// below would otherwise blow away a perfectly correct dedicated-view
-// hash (e.g. wiping "#mens" back to blank just because Escape closed an
-// unrelated cart/filter sheet while the Men's grid was showing behind
-// it) - the app's internal state would still say "mens" while the URL
-// bar silently went blank. Must NOT call history.back() - see the note
-// on closeAllOverlays() itself for why.
 function closeItemDetail(){
-  if(itemDetailShoeId === null) return;
-  closeItemDetailCore();
-  history.replaceState(null, "", location.pathname + location.search);
-}
-
-// Hash-driven cleanup for the product detail overlay - used by
-// routeToShoeFromHash() when the browser's back/forward navigation has
-// ALREADY moved the URL off a product hash. Deliberately never touches
-// history itself (unlike closeItemDetail() above), since the browser
-// already navigated to wherever it now is; writing history again here
-// would fight that navigation instead of just cleaning up after it.
-function closeItemDetailFromHistory(){
-  closeItemDetailCore();
-}
-
-function closeItemDetailCore(){
   const el = document.getElementById("itemDetailOverlay");
   if(el) el.classList.remove("open");
   itemDetailShoeId = null;
   updateBodyScrollLock();
   syncBackgroundInertState();
   updateGenderHeroVisibility(); // restores genderHero/productsView, nav highlighting, and the breadcrumb together
+  suppressHashRoute = true;
+  history.replaceState(null, "", location.pathname + location.search);
   restoreBackgroundScroll();
 }
 
