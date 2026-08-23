@@ -292,12 +292,13 @@
      goes back to filling its column naturally. */
   .footer-link-grid{
     max-width:300px; margin:0 auto;
+    transform:translateX(-14px);
     display:grid;
     grid-template-columns:1fr 1fr;
     row-gap:20px; column-gap:12px;
   }
   @media(min-width:900px){
-    .footer-link-grid{ grid-template-columns:repeat(4, auto); justify-content:start; column-gap:32px; margin:0; max-width:none; }
+    .footer-link-grid{ grid-template-columns:repeat(4, auto); justify-content:start; column-gap:32px; margin:0; max-width:none; transform:none; }
   }
   .footer-link-grid button, .footer-link-grid a{
     background:none; border:none; padding:0; margin:0; font-family:inherit;
@@ -499,13 +500,13 @@
   .home-hero-banner{
     position:relative; width:100%; overflow:hidden;
     background:var(--ink); /* fallback if the image fails to load */
-    aspect-ratio:1/1;
+    aspect-ratio:4/3;
   }
-  @media(min-width:480px){ .home-hero-banner{ aspect-ratio:4/3; } }
   @media(min-width:640px){ .home-hero-banner{ aspect-ratio:16/9; } }
   @media(min-width:1024px){ .home-hero-banner{ aspect-ratio:21/9; } }
   .home-hero-banner img{
     position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    object-position:left center;
   }
   .home-hero-banner::after{
     content:""; position:absolute; inset:0;
@@ -2003,9 +2004,9 @@
   <div class="footer-links-section">
     <div class="footer-link-grid">
       <button onclick="showAllProducts()">Shop</button>
+      <button onclick="goToOffers()">Offers</button>
       <button onclick="selectGenderCategory('mens')">Men's</button>
       <button onclick="selectGenderCategory('womens')">Women's</button>
-      <button onclick="goToOffers()">Offers</button>
       <button onclick="selectPriceTierHero('premium3000')">Premium</button>
       <button onclick="openSizeGuidePage()">Size Chart</button>
       <button onclick="openPoliciesPage()">Terms &amp; Policy</button>
