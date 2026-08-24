@@ -386,8 +386,8 @@
   .search-overlay-bar{
     display:none; align-items:center; gap:8px;
     position:fixed; left:0; right:0;
-    top:calc(var(--header-h) + var(--secondary-nav-h));
-    z-index:50;
+    top:calc(var(--header-h) + var(--secondary-nav-h) + var(--breadcrumb-h));
+    z-index:94;
     background:var(--paper);
     border-bottom:1.5px solid var(--line);
     box-shadow:var(--shadow-3);
@@ -810,6 +810,23 @@
   .featured-more-wrap{
     display:flex; justify-content:center; padding:4px 16px 24px;
   }
+
+  /* ---------- Home: trust badges (just before the footer) ---------- */
+  .home-trust-badges{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    padding:8px 16px 28px;
+  }
+  @media(min-width:640px){
+    .home-trust-badges{ grid-template-columns:repeat(4, 1fr); gap:14px; padding:8px 22px 32px; max-width:1440px; margin:0 auto; }
+  }
+  .home-trust-badge{
+    border:1.5px solid var(--line); border-radius:var(--radius-md);
+    padding:18px 10px 16px; text-align:center;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
+    color:var(--ink); background:var(--paper);
+  }
+  .home-trust-badge svg{ width:26px; height:26px; color:var(--gold); flex:none; }
 
   /* ---------- Category strip ---------- */
   .cat-strip{
@@ -1400,19 +1417,19 @@
     font-size:13.5px; color:var(--muted); line-height:1.65;
   }
   .item-detail-desc div + div{ margin-top:4px; }
-  .item-detail-desc-links{
-    margin-top:14px; display:flex; align-items:center; gap:8px;
-    font-size:12.5px;
-  }
-  .item-detail-desc-links a{
-    color:var(--ink); text-decoration:none; font-weight:700;
-  }
-  .item-detail-desc-links a:hover{ color:var(--muted); }
-  .item-detail-desc-links-sep{ color:var(--line); }
   /* Extra breathing room between size selection and Add to Cart so a
      mis-tap on mobile doesn't add the wrong size by accident. */
   .item-detail-info .sizes{ margin-bottom:6px; }
   .item-detail-info .add-btn{ margin-top:20px; }
+
+  /* ---------- Product page: Similar Products ---------- */
+  .item-detail-similar{ margin-top:28px; border-top:1px solid var(--line); }
+  .similar-heading{
+    font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
+    font-size:22px; letter-spacing:0.03em; text-transform:uppercase; color:var(--ink);
+    padding:20px 16px 0; margin:0;
+  }
+  @media(min-width:640px){ .similar-heading{ padding:24px 22px 0; font-size:26px; } }
 
   /* ---------- Quantity selector (item detail) ---------- */
   .qty-label{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:18px; font-weight:600; }
@@ -1958,6 +1975,25 @@
   <div class="featured-more-wrap" id="homeFeaturedMoreWrap">
     <button class="pill" id="homeFeaturedMoreBtn" onclick="showMoreHomeFeatured()">Show More</button>
   </div>
+
+  <div class="home-trust-badges">
+    <div class="home-trust-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+      <span>Free Shipping</span>
+    </div>
+    <div class="home-trust-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      <span>All India Delivery</span>
+    </div>
+    <div class="home-trust-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v.01M18 18v.01"/></svg>
+      <span>Cash On Delivery Available</span>
+    </div>
+    <div class="home-trust-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>New Stocks Every Month</span>
+    </div>
+  </div>
 </div>
 
 <div id="productsView">
@@ -2027,6 +2063,7 @@
     </div>
   </div>
 </footer>
+<div id="footerHomeAnchor" style="display:none" aria-hidden="true"></div>
 
 <!-- Hamburger navigation drawer -->
 <div class="hamburger-overlay" id="hamburgerOverlay" onclick="if(event.target===this) closeHamburger()">
@@ -2187,7 +2224,10 @@
 
 <!-- Full-screen item detail -->
 <div class="item-detail-overlay info-page-overlay" id="itemDetailOverlay" role="dialog" aria-modal="true" aria-label="Product details">
-  <div class="item-detail-scroll" id="itemDetailContent"></div>
+  <div class="item-detail-scroll">
+    <div id="itemDetailContent"></div>
+    <div id="itemDetailFooterSlot"></div>
+  </div>
 </div>
 
 <!-- Saved items / Compare -->
@@ -3594,13 +3634,12 @@ function buildDescriptionLines(rawDescription){
 
   lines.push(...standaloneLines);
 
-  if(accessories.length === 1){
-    lines.push(`Comes with ${accessories[0]}.`);
-  } else if(accessories.length > 1){
-    const last = accessories[accessories.length - 1];
-    const rest = accessories.slice(0, -1).join(", ");
-    lines.push(`Comes with ${rest} and ${last}.`);
-  }
+  // Brand Box gets its own "Free Brand Box" line (it's a perk, not just
+  // an inclusion). Every other accessory gets its own "{Item} included."
+  // line - no more combining them into one "Comes with X, Y and Z"
+  // sentence.
+  if(accessories.includes("Brand Box")) lines.push("Free Brand Box.");
+  accessories.filter(a => a !== "Brand Box").forEach(a => lines.push(`${a} included.`));
 
   // If nothing at all was found (e.g. the cell had junk like just
   // slashes), fall back rather than showing a blank block.
@@ -4505,8 +4544,9 @@ function goHome(){
 // icon (next to the heart button). Works from ANY page - it does NOT
 // navigate Home first, it just shows the bar over whatever's currently
 // on screen (see closeAllOverlays() for where it auto-closes on real
-// navigation). The Filter button inside it is only shown while on the
-// Welcome page, since Shop already has its own Sort/Filters buttons.
+// navigation). The Filter button only shows when opened from Home -
+// Shop already has its own separate Sort/Filters buttons, so it's
+// hidden everywhere else to avoid a redundant second filter entry point.
 function toggleSearchOverlay(){
   const bar = document.getElementById("searchOverlayBar");
   if(!bar) return;
@@ -5268,10 +5308,14 @@ function openCartItemDetail(shoeId){
 function renderProductDetailView(shoeId){
   const shoe = SHOES.find(s => s.id === shoeId);
   if(!shoe) return false;
+  closeSearchOverlay();
   itemDetailShoeId = shoeId;
   itemDetailPhotoIndex = 0;
   renderItemDetail();
   document.getElementById("itemDetailOverlay").classList.add("open");
+  const itemDetailScrollArea = document.querySelector("#itemDetailOverlay .item-detail-scroll");
+  if(itemDetailScrollArea) itemDetailScrollArea.scrollTop = 0;
+  relocateFooterIntoProductPage();
   document.getElementById("genderHero").style.display = "none";
   document.getElementById("productsView").style.display = "none";
   updateBodyScrollLock();
@@ -5364,6 +5408,27 @@ function closeItemDetailCore(){
   syncBackgroundInertState();
   updateGenderHeroVisibility(); // restores genderHero/productsView, nav highlighting, and the breadcrumb together
   restoreBackgroundScroll();
+  restoreFooterToDocument();
+}
+
+// The real global footer (with its real ids/onclick handlers - not a
+// duplicate) gets physically moved into the product page's persistent
+// footer slot while a product is open, and moved back to its normal
+// spot in the document when it closes. It lives in #itemDetailFooterSlot
+// (a sibling of #itemDetailContent, not inside it), so re-rendering the
+// product's own content on size/qty/photo changes never wipes it out.
+function relocateFooterIntoProductPage(){
+  const footer = document.querySelector(".site-footer");
+  const slot = document.getElementById("itemDetailFooterSlot");
+  if(footer && slot && footer.parentElement !== slot) slot.appendChild(footer);
+}
+
+function restoreFooterToDocument(){
+  const footer = document.querySelector(".site-footer");
+  const anchor = document.getElementById("footerHomeAnchor");
+  if(footer && anchor && footer.nextSibling !== anchor){
+    anchor.parentElement.insertBefore(footer, anchor);
+  }
 }
 
 function itemDetailPhotoStep(direction){
@@ -5377,6 +5442,79 @@ function itemDetailPhotoStep(direction){
 function itemDetailPhotoGoTo(index){
   itemDetailPhotoIndex = index;
   renderItemDetail();
+}
+
+// "Similar" = same detected model first (other colorways of the same
+// shoe), then same brand within +/-30% of this shoe's price, then just
+// anything in that price range, then - only if still short - whatever's
+// left, so the section is never empty for a shoe with few close matches.
+// Always constrained to the same gender (or unisex/"MW" items) as the
+// shoe being viewed - a men's shoe should never suggest a women's one.
+function getSimilarShoes(shoe, n){
+  const model = detectModel(shoe.name);
+  const priceMin = shoe.price * 0.7;
+  const priceMax = shoe.price * 1.3;
+  const candidates = SHOES.filter(s => s.id !== shoe.id && (shoe.gender === "MW" || s.gender === "MW" || s.gender === shoe.gender));
+  const seen = new Set();
+  const result = [];
+  const add = list => {
+    for(const s of list){
+      if(result.length >= n) return;
+      if(!seen.has(s.id)){ seen.add(s.id); result.push(s); }
+    }
+  };
+  if(model) add(candidates.filter(s => detectModel(s.name) === model));
+  add(candidates.filter(s => s.brand === shoe.brand && s.price >= priceMin && s.price <= priceMax));
+  add(candidates.filter(s => s.price >= priceMin && s.price <= priceMax));
+  add(candidates);
+  return result;
+}
+
+function renderSimilarProductsHtml(shoe){
+  const similar = getSimilarShoes(shoe, 6);
+  if(similar.length === 0) return "";
+  return `
+    <div class="item-detail-similar">
+      <h2 class="similar-heading">Similar Products</h2>
+      <div class="grid">
+        ${similar.map(s => {
+          const discountPct = shoeDiscountPercent(s);
+          const hasDiscount = discountPct !== null;
+          const tags = [];
+          if(s.soldOutAll) tags.push('<span class="tag sold">SOLD OUT</span>');
+          if(hasDiscount) tags.push(`<span class="tag sale">${discountPct}% OFF</span>`);
+          else if(s.isSale) tags.push('<span class="tag sale">DISCOUNT</span>');
+          if(s.isNew) tags.push('<span class="tag new">NEW</span>');
+          return `
+            <div class="card" id="similar-shoe-${s.id}" onclick="openItemDetail(${s.id})" onpointerdown="preloadShoeSecondaryImages(${s.id})" role="button" tabindex="0"
+              aria-label="View details for ${escapeHtml(s.name)}"
+              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openItemDetail(${s.id});}">
+              <div class="imgwrap">
+                <img src="${escapeHtml(s.images[0])}" alt="${escapeHtml(s.name)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
+                <div class="tag-row">${tags.join("")}</div>
+                ${s.images.length > 1 ? `<div class="photo-count">📷 ${s.images.length}</div>` : ''}
+              </div>
+              <div class="body">
+                <div class="brand-row">
+                  <div class="brand">${escapeHtml(s.brand)}</div>
+                  <button class="heart-toggle-btn ${savedIds.includes(s.id) ? 'active' : ''}" id="heartBtnSimilar-${s.id}"
+                    onclick="event.stopPropagation(); toggleSaved(${s.id})"
+                    aria-label="${savedIds.includes(s.id) ? 'Remove from saved' : 'Save for comparison'}" aria-pressed="${savedIds.includes(s.id)}">
+                    <span aria-hidden="true">${heartGlyph(savedIds.includes(s.id))}</span>
+                  </button>
+                </div>
+                <div class="name">${escapeHtml(s.name)}</div>
+                <div class="price-row">
+                  <span class="price-now">₹${s.price}</span>
+                  ${hasDiscount ? `<span class="price-was">₹${s.marketPrice}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
 }
 
 function renderItemDetail(){
@@ -5477,13 +5615,9 @@ function renderItemDetail(){
       </div>` : ''}
 
       <div class="item-detail-desc">${[qualityLabel(shoe.quality), ...buildDescriptionLines(shoe.description)].filter(Boolean).map(line => `<div>${escapeHtml(line)}</div>`).join("")}</div>
-
-      <div class="item-detail-desc-links">
-        <a href="https://wa.me/${WHATSAPP_NUMBER}" target="_blank" rel="noopener">Contact Us</a>
-        <span class="item-detail-desc-links-sep">·</span>
-        <a href="#" onclick="event.preventDefault(); closeItemDetail(); openPoliciesPage();">Terms &amp; Policy</a>
-      </div>
     </div>
+
+    ${renderSimilarProductsHtml(shoe)}
   `;
 }
 
@@ -5611,7 +5745,7 @@ function updateSavedCount(){
 // used to have: a full re-render would restart every thumbnail's fade-in
 // for something this small.
 function updateGridSavedHearts(){
-  document.querySelectorAll('[id^="heartBtnGrid-"], [id^="heartBtnHome-"]').forEach(btn => {
+  document.querySelectorAll('[id^="heartBtnGrid-"], [id^="heartBtnHome-"], [id^="heartBtnSimilar-"]').forEach(btn => {
     const shoeId = Number(btn.id.slice(btn.id.lastIndexOf("-") + 1));
     const isSaved = savedIds.includes(shoeId);
     btn.classList.toggle("active", isSaved);
