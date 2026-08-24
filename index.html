@@ -88,6 +88,7 @@
     --header-h:92px; /* fallback; the exact value is set from JS to match real header height */
     --secondary-nav-h:54px; /* fallback; exact value set from JS */
     --breadcrumb-h:0px; /* fallback; exact value set from JS - 0 when hidden (Welcome Page) */
+    --search-bar-h:0px; /* fallback; set from JS when the search bar opens/closes - lets fixed full-page overlays (product/policies/size-guide) make room for it too */
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 
@@ -376,24 +377,29 @@
   .search-suggest-item:last-child{ border-bottom:none; }
   .search-suggest-item:hover{ background:var(--panel); }
 
-  /* ---------- Global search overlay ----------
+  /* ---------- Global search bar ----------
      Opened from the header's search icon (next to the heart button), on
-     ANY page - not just Home. Fixed just below the header + secondary
-     nav, on top of whatever page content is underneath, rather than
-     living inline inside one specific page's markup. Closed automatically
-     by closeAllOverlays() whenever a real navigation happens (see there),
-     so it never floats over content it doesn't apply to anymore. */
+     ANY page - not just Home. Lives in normal document flow right after
+     the breadcrumb (see markup), so opening it pushes the page's own
+     content down instead of floating over it - animated open/closed via
+     max-height + opacity so it slides in from the top. Closed
+     automatically by closeAllOverlays() whenever a real navigation
+     happens (see there). */
   .search-overlay-bar{
-    display:none; align-items:center; gap:8px;
-    position:fixed; left:0; right:0;
-    top:calc(var(--header-h) + var(--secondary-nav-h) + var(--breadcrumb-h));
-    z-index:94;
+    display:flex; align-items:center; gap:8px;
+    overflow:hidden;
+    max-height:0; opacity:0;
+    padding:0 16px;
     background:var(--paper);
-    border-bottom:1.5px solid var(--line);
-    box-shadow:var(--shadow-3);
-    padding:12px 16px;
+    border-bottom:0px solid var(--line);
+    transition:max-height var(--dur-med) var(--ease), opacity var(--dur-med) var(--ease), padding var(--dur-med) var(--ease);
   }
-  .search-overlay-bar.open{ display:flex; }
+  .search-overlay-bar.open{
+    max-height:100px; opacity:1;
+    padding:12px 16px;
+    border-bottom-width:1.5px;
+    overflow:visible;
+  }
   .search-overlay-bar .search-box{ flex:1 1 auto; min-width:0; }
   .search-overlay-go-btn{ flex:none; }
   .overlay-filter-btn{
@@ -1386,7 +1392,10 @@
     opacity:0; transition:opacity var(--dur-med) var(--ease);
   }
   .item-detail-overlay.open{ display:flex; opacity:1; }
-  .info-page-overlay{ top: calc(var(--header-h) + var(--secondary-nav-h) + var(--breadcrumb-h)); }
+  .info-page-overlay{
+    top: calc(var(--header-h) + var(--secondary-nav-h) + var(--breadcrumb-h) + var(--search-bar-h));
+    transition: top var(--dur-med) var(--ease), opacity var(--dur-med) var(--ease);
+  }
   .item-detail-back{
     position:absolute; top:12px; left:12px; z-index:3;
     background:var(--paper); border:1.5px solid var(--line); border-radius:var(--radius-pill);
@@ -1900,6 +1909,8 @@
   <button class="secondary-nav-btn" id="navPremiumBtn" onclick="selectPriceTierHero('premium3000')">Premium</button>
 </nav>
 
+<nav class="breadcrumb" id="breadcrumbNav" aria-label="Breadcrumb" style="display:none"></nav>
+
 <div class="search-overlay-bar" id="searchOverlayBar">
   <div class="search-box">
     <button type="button" class="icon search-icon-btn" onclick="submitSearchOverlay()" aria-label="Search"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
@@ -1914,8 +1925,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"></line><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle><line x1="4" y1="12" x2="20" y2="12"></line><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"></circle><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle></svg>
   </button>
 </div>
-
-<nav class="breadcrumb" id="breadcrumbNav" aria-label="Breadcrumb" style="display:none"></nav>
 
 <div id="genderHero">
   <div class="home-hero-banner">
@@ -3710,7 +3719,7 @@ function buildSearchSuggestionPool(){
 
 function getSearchSuggestions(query){
   const q = query.trim().toLowerCase();
-  if(q.length < 2) return [];
+  if(q.length < 1) return [];
 
   const pool = buildSearchSuggestionPool();
   const results = [];
@@ -4540,17 +4549,24 @@ function goHome(){
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// Toggles the global search overlay open/closed from the header's search
+// Toggles the global search bar open/closed from the header's search
 // icon (next to the heart button). Works from ANY page - it does NOT
-// navigate Home first, it just shows the bar over whatever's currently
-// on screen (see closeAllOverlays() for where it auto-closes on real
-// navigation). The Filter button only shows when opened from Home -
-// Shop already has its own separate Sort/Filters buttons, so it's
+// navigate Home first. It lives in normal document flow right below the
+// breadcrumb (see markup) and slides open/closed there, pushing the
+// page's own content down rather than floating over it; --search-bar-h
+// lets the fixed full-page overlays (product/policies/size-guide) shift
+// down by the same amount, since they don't participate in normal flow.
+// Closed automatically by closeAllOverlays() whenever a real navigation
+// happens (see there). The Filter button only shows when opened from
+// Home - Shop already has its own separate Sort/Filters buttons, so it's
 // hidden everywhere else to avoid a redundant second filter entry point.
+const SEARCH_BAR_OPEN_HEIGHT = "70px";
+
 function toggleSearchOverlay(){
   const bar = document.getElementById("searchOverlayBar");
   if(!bar) return;
   const isOpen = bar.classList.toggle("open");
+  document.documentElement.style.setProperty("--search-bar-h", isOpen ? SEARCH_BAR_OPEN_HEIGHT : "0px");
   if(isOpen){
     const filterBtn = document.getElementById("searchOverlayFilterBtn");
     if(filterBtn) filterBtn.style.display = onWelcomePage ? "" : "none";
@@ -4564,6 +4580,7 @@ function toggleSearchOverlay(){
 function closeSearchOverlay(){
   const bar = document.getElementById("searchOverlayBar");
   if(bar) bar.classList.remove("open");
+  document.documentElement.style.setProperty("--search-bar-h", "0px");
   const input = document.getElementById("searchOverlayInput");
   if(input) input.value = "";
   hideSuggestDropdown("searchOverlaySuggest");
@@ -5444,30 +5461,38 @@ function itemDetailPhotoGoTo(index){
   renderItemDetail();
 }
 
-// "Similar" = same detected model first (other colorways of the same
-// shoe), then same brand within +/-30% of this shoe's price, then just
-// anything in that price range, then - only if still short - whatever's
-// left, so the section is never empty for a shoe with few close matches.
-// Always constrained to the same gender (or unisex/"MW" items) as the
-// shoe being viewed - a men's shoe should never suggest a women's one.
+// Ranking, in priority order:
+//   1. Product name/model match - same detected model (e.g. both "Jordan
+//      1", both "Samba") ranks above just sharing a brand with no model
+//      match (e.g. two different Onitsuka Tiger shoes), which ranks
+//      above no name/brand relation at all.
+//   2. Within each of those tiers, closest price wins.
+//   3. Same gender (or unisex) is only a final tiebreaker - it can never
+//      outrank a name or price match, and it never excludes anything by
+//      itself.
+// Candidates with no name/brand relation are only included if they're
+// within a reasonable price band of the current shoe - so the list is
+// never padded with genuinely unrelated products just to reach 6; if
+// only 3 or 4 real matches exist, only those show.
 function getSimilarShoes(shoe, n){
   const model = detectModel(shoe.name);
-  const priceMin = shoe.price * 0.7;
-  const priceMax = shoe.price * 1.3;
-  const candidates = SHOES.filter(s => s.id !== shoe.id && (shoe.gender === "MW" || s.gender === "MW" || s.gender === shoe.gender));
-  const seen = new Set();
-  const result = [];
-  const add = list => {
-    for(const s of list){
-      if(result.length >= n) return;
-      if(!seen.has(s.id)){ seen.add(s.id); result.push(s); }
-    }
+  const priceBand = shoe.price * 0.3; // +/-30% counts as "close enough" price-only relevance
+
+  const nameTier = s => {
+    const sModel = detectModel(s.name);
+    if(model && sModel && sModel === model) return 0; // same product line - strongest match
+    if(s.brand === shoe.brand) return 1;               // same brand, different model
+    return 2;                                           // no name/brand relation
   };
-  if(model) add(candidates.filter(s => detectModel(s.name) === model));
-  add(candidates.filter(s => s.brand === shoe.brand && s.price >= priceMin && s.price <= priceMax));
-  add(candidates.filter(s => s.price >= priceMin && s.price <= priceMax));
-  add(candidates);
-  return result;
+  const genderPenalty = s => (shoe.gender === "MW" || s.gender === "MW" || s.gender === shoe.gender) ? 0 : 1;
+
+  const ranked = SHOES
+    .filter(s => s.id !== shoe.id)
+    .map(s => ({ shoe: s, tier: nameTier(s), priceDist: Math.abs(s.price - shoe.price), genderPenalty: genderPenalty(s) }))
+    .filter(r => r.tier <= 1 || r.priceDist <= priceBand) // fallback (no name/brand match) still needs a genuinely close price
+    .sort((a, b) => (a.tier - b.tier) || (a.priceDist - b.priceDist) || (a.genderPenalty - b.genderPenalty));
+
+  return ranked.slice(0, n).map(r => r.shoe);
 }
 
 function renderSimilarProductsHtml(shoe){
