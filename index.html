@@ -387,6 +387,7 @@
      happens (see there). */
   .search-overlay-bar{
     display:flex; align-items:center; gap:8px;
+    position:relative; z-index:50;
     overflow:hidden;
     max-height:0; opacity:0;
     padding:0 16px;
@@ -678,6 +679,7 @@
 
   /* ---------- Welcome Page: Offers section ---------- */
   .offers-section{ padding:18px 16px 4px; }
+  @media(min-width:1280px){ .offers-section{ max-width:1200px; margin:0 auto; } }
   .offers-heading{
     font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
     font-size:26px; letter-spacing:0.03em; text-transform:uppercase; color:var(--ink);
@@ -696,6 +698,9 @@
     box-shadow:var(--shadow-2);
     transition:transform var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease);
   }
+  @media(min-width:640px){ .offer-card{ max-width:260px; } }
+  @media(min-width:1024px){ .offer-card{ max-width:300px; } .offers-strip{ gap:16px; } }
+  @media(min-width:1280px){ .offer-card{ max-width:340px; } }
   .offer-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-3); }
   .offer-card:active{ transform:scale(0.97); }
   .offer-card-img{
@@ -1918,7 +1923,7 @@
       oninput="renderSuggestDropdown('searchOverlaySuggest', this.value)"
       onkeydown="handleSearchOverlayKeydown(event)"
       onblur="setTimeout(function(){ hideSuggestDropdown('searchOverlaySuggest'); }, 150)">
-    <div class="search-suggest-list" id="searchOverlaySuggest" role="listbox" onclick="handleSearchOverlaySuggestClick(event)"></div>
+    <div class="search-suggest-list" id="searchOverlaySuggest" role="listbox" onmousedown="event.preventDefault(); handleSearchOverlaySuggestClick(event)"></div>
   </div>
   <button class="pill search-overlay-go-btn" onclick="submitSearchOverlay()">Search</button>
   <button class="overlay-filter-btn" id="searchOverlayFilterBtn" onclick="openHomeFilters()" aria-label="Open filters" style="display:none">
@@ -2028,7 +2033,7 @@
         oninput="onSearch(); renderSuggestDropdown('shopSearchSuggest', this.value)"
         onkeydown="handleShopSearchKeydown(event)"
         onblur="setTimeout(function(){ hideSuggestDropdown('shopSearchSuggest'); }, 150)">
-      <div class="search-suggest-list" id="shopSearchSuggest" role="listbox" onclick="handleShopSuggestClick(event)"></div>
+      <div class="search-suggest-list" id="shopSearchSuggest" role="listbox" onmousedown="event.preventDefault(); handleShopSuggestClick(event)"></div>
     </div>
   </div>
 </div>
