@@ -387,7 +387,7 @@
      happens (see there). */
   .search-overlay-bar{
     display:flex; align-items:center; gap:8px;
-    position:relative; z-index:50;
+    position:relative; z-index:90;
     overflow:hidden;
     max-height:0; opacity:0;
     padding:0 16px;
@@ -3518,6 +3518,7 @@ const KNOWN_MODELS = [
   { match:["p6000","p-6000"], label:"P-6000" },
   { match:["adizero"], label:"Adizero" },
   { match:["forum bad bunny"], label:"Forum Bad Bunny" },
+  { match:["forum"], label:"Forum" },
   { match:["badbo"], label:"Badbo" },
   { match:["mary jane"], label:"Mary Jane" },
   { match:["ballet"], label:"Ballet" },
@@ -3674,8 +3675,20 @@ function escapeHtml(str){
   }[c]));
 }
 
+// Collab shoes are often named "Model x Partner" - but the "x" shows up
+// inconsistently (x / X / × / missing entirely) across a sheet with
+// hundreds of rows, which used to split what's really the same model
+// into separately-detected (or undetected) identities. Stripping any
+// standalone x/X/× (i.e. only when it's its own separator token, not a
+// letter inside a real word like "box" or "flex") before matching means
+// every spelling of a collab name is treated the same, without having
+// to hand-list every "x"/no-"x" variant in KNOWN_MODELS.
 function detectModel(shoeName){
-  const name = (shoeName || "").toLowerCase();
+  const name = (shoeName || "")
+    .toLowerCase()
+    .replace(/\s+[x×]\s+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   for(const entry of KNOWN_MODELS){
     if(entry.match.some(m => name.includes(m))) return entry.label;
   }
@@ -3701,23 +3714,13 @@ const SEARCH_ALIASES = {
   "cod": "Cash on Delivery"
 };
 
-// Model labels that are just a number/code (e.g. "9060") are ambiguous
-// on their own, so they get their brand prefixed ("New Balance 9060").
-// Named models (e.g. "Samba", "Jordan 1") are already specific enough
-// and stay bare, matching how people actually search for them.
-function modelNeedsBrandPrefix(modelLabel){
-  return /^[0-9]/.test(modelLabel) || /^p-?\d/i.test(modelLabel);
-}
-
 function buildSearchSuggestionPool(){
   const brands = new Set();
   const models = new Set();
   SHOES.forEach(shoe => {
     if(shoe.brand) brands.add(shoe.brand);
     const model = detectModel(shoe.name);
-    if(model){
-      models.add(modelNeedsBrandPrefix(model) && shoe.brand ? `${shoe.brand} ${model}` : model);
-    }
+    if(model) models.add(shoe.brand ? `${shoe.brand} ${model}` : model);
   });
   return [...brands, ...models, "Cash on Delivery"];
 }
@@ -3731,17 +3734,17 @@ function getSearchSuggestions(query){
   const seen = new Set();
   const addTerm = term => { if(!seen.has(term)){ results.push(term); seen.add(term); } };
 
-  // Alias hit first (e.g. "nb") - then pull in every real pool entry
-  // that belongs to it (e.g. "New Balance 9060") so the shopper sees
-  // the specific models, not just the bare brand name.
+  // Curated abbreviations (e.g. "af", "nb") resolve to a target phrase,
+  // then every pool entry CONTAINING that phrase is suggested - so "af"
+  // surfaces "Nike Airforce" (full brand + model, not a bare "Airforce"),
+  // and "nb" surfaces "New Balance" plus every "New Balance {model}"
+  // actually in stock.
   const aliasTarget = SEARCH_ALIASES[q];
   if(aliasTarget){
-    addTerm(aliasTarget);
     const targetLower = aliasTarget.toLowerCase();
     pool.forEach(term => {
       if(results.length >= 6) return;
-      const termLower = term.toLowerCase();
-      if(termLower.startsWith(targetLower) && termLower !== targetLower) addTerm(term);
+      if(term.toLowerCase().includes(targetLower)) addTerm(term);
     });
   }
 
@@ -3791,19 +3794,13 @@ function handleShopSuggestClick(e){
   onSearch();
 }
 
-// Enter completes to the top suggestion (if the dropdown is open and the
-// typed text isn't already an exact match) instead of just submitting
-// whatever partial text was typed - so pressing Enter on "fo" searches
-// "Airforce", not the literal fragment "fo".
+// Enter always searches exactly what's typed - it never silently swaps
+// in a suggestion the person didn't pick. A suggestion only ever fills
+// the input when explicitly clicked/tapped (see handleSearchOverlay-
+// SuggestClick / handleShopSuggestClick below).
 function handleSearchOverlayKeydown(e){
   if(e.key !== "Enter") return;
   e.preventDefault();
-  const listEl = document.getElementById("searchOverlaySuggest");
-  const input = document.getElementById("searchOverlayInput");
-  const topItem = listEl && listEl.classList.contains("open") ? listEl.querySelector(".search-suggest-item") : null;
-  if(topItem && input.value.trim().toLowerCase() !== topItem.dataset.value.toLowerCase()){
-    input.value = topItem.dataset.value;
-  }
   hideSuggestDropdown("searchOverlaySuggest");
   submitSearchOverlay();
 }
@@ -3811,13 +3808,6 @@ function handleSearchOverlayKeydown(e){
 function handleShopSearchKeydown(e){
   if(e.key !== "Enter") return;
   e.preventDefault();
-  const listEl = document.getElementById("shopSearchSuggest");
-  const input = document.getElementById("searchInput");
-  const topItem = listEl && listEl.classList.contains("open") ? listEl.querySelector(".search-suggest-item") : null;
-  if(topItem && input.value.trim().toLowerCase() !== topItem.dataset.value.toLowerCase()){
-    input.value = topItem.dataset.value;
-    onSearch();
-  }
   hideSuggestDropdown("shopSearchSuggest");
 }
 
