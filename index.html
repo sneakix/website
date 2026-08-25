@@ -4324,6 +4324,9 @@ function setGender(g){
   activeGender = g; // "M" or "W"
   activeCategory = "All"; activeType = "All"; activeBrands.clear(); activeModels.clear();
   activeSizes.clear(); activeAvailFilters.clear(); activeQualities.clear(); activeFilter = "all";
+  searchTerm = "";
+  const searchInput = document.getElementById("searchInput");
+  if(searchInput) searchInput.value = "";
   currentPage = 1;
   renderFilterStrip(); renderCategories(); renderFilterSheet(); renderSelectedFilters(); renderGrid();
   updateGenderHeroVisibility();
@@ -4597,14 +4600,17 @@ function showAllProducts(presetCategory){
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// The search overlay's "Search" button / Enter key. If opened from Home,
-// hands off into All Products with the typed term applied (same as
-// before); if already browsing Shop, just applies the search to the
-// grid that's already showing, without navigating anywhere.
+// The search overlay's "Search" button / Enter key. If opened from a
+// product page, closes it first so the grid underneath (the one the
+// search actually applies to) becomes visible again. If opened from
+// Home, hands off into All Products with the typed term applied. If
+// already browsing Shop, just applies the search to the grid that's
+// already showing, without navigating anywhere.
 function submitSearchOverlay(){
   const input = document.getElementById("searchOverlayInput");
   const term = input ? input.value.trim() : "";
   if(!term) return;
+  if(itemDetailShoeId !== null) closeItemDetail();
   if(onWelcomePage) showAllProducts();
   const searchInput = document.getElementById("searchInput");
   if(searchInput) searchInput.value = term;
