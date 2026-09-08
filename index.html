@@ -2672,6 +2672,7 @@ function writeCatalogCache(rawRows){
 // isLiveFetch distinguishes the two passes for deep-link routing below.
 function applyCatalogRows(rawRows, isLiveFetch){
   SHOES = rowsToShoes(rawRows);
+  cachedSuggestionPool = buildSearchSuggestionPool();
 
   // Recompute whether the Special Offers card should show at all - it's
   // a pure reflection of whether at least one row currently has
@@ -2822,6 +2823,7 @@ function loadShoesFromSheet(){
   Papa.parse(GOOGLE_SHEET_CSV_URL, {
     download: true,
     header: true,
+    worker: true, // parse off the main thread - matters most on the 5-min background refresh
     complete: function(results){
       const rawRows = results.data.filter(r => Object.values(r).some(v => v && String(v).trim()));
 
@@ -2829,8 +2831,18 @@ function loadShoesFromSheet(){
       console.log(`[SNEAKIX] CSV columns detected:`, results.meta && results.meta.fields);
       console.log(`[SNEAKIX] Raw non-blank rows: ${rawRows.length}`);
 
-      applyCatalogRows(rawRows, true);
-      writeCatalogCache(rawRows);
+      // The 5-minute background refresh (and the initial cache-then-live
+      // double pass) used to call applyCatalogRows() unconditionally, which
+      // fully rebuilds the filter strip, categories, filter sheet, grid,
+      // home-featured grid, and more - every single time, even when the
+      // sheet hasn't actually changed. That's a real, avoidable jank hit if
+      // it fires while someone's mid-scroll. Skip the whole rebuild when
+      // the fetched rows are byte-identical to what's already applied.
+      const unchanged = cachedRows && JSON.stringify(rawRows) === JSON.stringify(cachedRows);
+      if(!unchanged){
+        applyCatalogRows(rawRows, true);
+        writeCatalogCache(rawRows);
+      }
 
       if(SHOES.length === 0){
         const grid = document.getElementById("grid");
@@ -3714,6 +3726,13 @@ const SEARCH_ALIASES = {
   "cod": "Cash on Delivery"
 };
 
+// getSearchSuggestions() runs on every keystroke (undebounced, for instant
+// dropdown feedback) - rebuilding this pool from the whole SHOES array plus
+// a detectModel() scan per shoe on every single character typed was wasted
+// work, since the catalog itself only changes when applyCatalogRows() runs.
+// Built once there (see cachedSuggestionPool = ... in applyCatalogRows) and
+// simply reused here.
+let cachedSuggestionPool = [];
 function buildSearchSuggestionPool(){
   const brands = new Set();
   const models = new Set();
@@ -3729,7 +3748,7 @@ function getSearchSuggestions(query){
   const q = query.trim().toLowerCase();
   if(q.length < 1) return [];
 
-  const pool = buildSearchSuggestionPool();
+  const pool = cachedSuggestionPool;
   const results = [];
   const seen = new Set();
   const addTerm = term => { if(!seen.has(term)){ results.push(term); seen.add(term); } };
@@ -4468,6 +4487,11 @@ function setSizeFilter(sz){
 function removeSize(sz){ activeSizes.delete(Number(sz)); currentPage = 1; renderFilterSheet(); renderSelectedFilters(); renderGrid(); }
 function setSort(mode){ activeSort = mode; currentPage = 1; renderFilterStrip(); renderFilterSheet(); renderSelectedFilters(); renderGrid(); trackEvent('select_sort', { sort_value: mode }); }
 
+// Dragging a range input fires "input" continuously (often 30-60x/sec) -
+// rebuilding the full grid on every tick causes visible stutter mid-drag.
+// The ₹ labels still update every tick (cheap, instant feedback); the
+// actual filter/grid rebuild is debounced to once the drag settles.
+let priceSliderRenderTimer = null;
 function onPriceSliderChange(){
   let min = Number(document.getElementById("priceMinSlider").value);
   let max = Number(document.getElementById("priceMaxSlider").value);
@@ -4476,10 +4500,14 @@ function onPriceSliderChange(){
   priceMax = max;
   document.getElementById("priceMinLabel").textContent = `₹${min.toLocaleString("en-IN")}`;
   document.getElementById("priceMaxLabel").textContent = `₹${max.toLocaleString("en-IN")}`;
-  currentPage = 1;
-  updateFilterBadge();
-  renderSelectedFilters();
-  renderGrid();
+
+  clearTimeout(priceSliderRenderTimer);
+  priceSliderRenderTimer = setTimeout(() => {
+    currentPage = 1;
+    updateFilterBadge();
+    renderSelectedFilters();
+    renderGrid();
+  }, 120);
 }
 
 function clearAllFilters(){
@@ -5015,7 +5043,7 @@ function renderGrid(){
   // scrolling fast right after page load doesn't hit a flash of empty
   // image boxes a couple rows past the fold. Everything from the 11th
   // card on stays loading="lazy" as before.
-  const EAGER_IMAGE_COUNT = 10;
+  const EAGER_IMAGE_COUNT = 6;
 
   grid.innerHTML = list.map((shoe, i)=>{
     const discountPct = shoeDiscountPercent(shoe);
@@ -5028,13 +5056,14 @@ function renderGrid(){
     if(shoe.isNew) tags.push('<span class="tag new">NEW</span>');
 
     const imgLoading = i < EAGER_IMAGE_COUNT ? "eager" : "lazy";
+    const fetchPrio = i === 0 ? ' fetchpriority="high"' : '';
 
     return `
       <div class="card" id="shoe-${shoe.id}" onclick="openItemDetail(${shoe.id})" onpointerdown="preloadShoeSecondaryImages(${shoe.id})" role="button" tabindex="0"
         aria-label="View details for ${escapeHtml(shoe.name)}"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openItemDetail(${shoe.id});}">
         <div class="imgwrap">
-          <img src="${escapeHtml(shoe.images[0])}" alt="${escapeHtml(shoe.name)}" loading="${imgLoading}" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
+          <img src="${escapeHtml(shoe.images[0])}" alt="${escapeHtml(shoe.name)}" loading="${imgLoading}" decoding="async"${fetchPrio} onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
           <div class="tag-row">${tags.join("")}</div>
           ${shoe.images.length > 1 ? `<div class="photo-count">📷 ${shoe.images.length}</div>` : ''}
         </div>
@@ -5114,7 +5143,7 @@ function renderHomeFeatured(){
         aria-label="View details for ${escapeHtml(shoe.name)}"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openItemDetail(${shoe.id});}">
         <div class="imgwrap">
-          <img src="${escapeHtml(shoe.images[0])}" alt="${escapeHtml(shoe.name)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
+          <img src="${escapeHtml(shoe.images[0])}" alt="${escapeHtml(shoe.name)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
           <div class="tag-row">${tags.join("")}</div>
           ${shoe.images.length > 1 ? `<div class="photo-count">📷 ${shoe.images.length}</div>` : ''}
         </div>
@@ -5516,7 +5545,7 @@ function renderSimilarProductsHtml(shoe){
               aria-label="View details for ${escapeHtml(s.name)}"
               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openItemDetail(${s.id});}">
               <div class="imgwrap">
-                <img src="${escapeHtml(s.images[0])}" alt="${escapeHtml(s.name)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
+                <img src="${escapeHtml(s.images[0])}" alt="${escapeHtml(s.name)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
                 <div class="tag-row">${tags.join("")}</div>
                 ${s.images.length > 1 ? `<div class="photo-count">📷 ${s.images.length}</div>` : ''}
               </div>
