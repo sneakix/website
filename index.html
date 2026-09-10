@@ -2813,23 +2813,79 @@ function routeToShoeFromHashOnLoad(isLiveFetch){
   // and wait for the live fetch to make the final call.
 }
 
+// A flaky mobile connection, a cold start on the caching Worker in front of
+// the sheet, or a CSV download that gets cut short mid-transfer can all make
+// PapaParse fire `complete` with far fewer rows than the catalog actually
+// has - there's no way for it to tell "the merchant really did delete most
+// of their products" apart from "the network dropped most of the response".
+// Trusting that thin response and replacing everything on screen with it is
+// what makes products (or the whole grid) intermittently vanish. This only
+// ever protects an ALREADY-good catalog that's currently on screen or
+// cached - a genuinely empty sheet on a first-ever visit (nothing to
+// protect yet) still falls through to the normal diagnostic messages below.
+function isSuspiciousRefresh(rawRows, cachedRows){
+  const priorCount = cachedRows ? cachedRows.length : SHOES.length;
+  if(priorCount === 0) return false;
+  // Losing more than half of a previously-known-good row count essentially
+  // never reflects a real merchant edit; treat it as a bad fetch instead.
+  return rawRows.length < priorCount * 0.5;
+}
+
+const CATALOG_FETCH_TIMEOUT_MS = 12000;
+const CATALOG_FETCH_MAX_RETRIES = 2; // quick background retries before giving up
+
 function loadShoesFromSheet(){
   const cachedRows = readCatalogCache();
   if(cachedRows){
     console.log(`[SNEAKIX] Rendered ${cachedRows.length} cached row(s) instantly - fetching a fresh copy in the background.`);
     applyCatalogRows(cachedRows, false);
   }
+  fetchCatalog(cachedRows, 0);
+}
+
+// isRetry distinguishes a background retry (after a timeout/error/suspicious
+// fetch) from the original request, purely for clearer console diagnostics.
+function fetchCatalog(cachedRows, attempt){
+  let settled = false; // guards against the timeout AND the real callback both firing
+
+  // Papa.parse has no built-in timeout - on a stuck connection or an
+  // unresponsive Worker it would otherwise just hang forever with the grid
+  // stuck exactly as it was. Treat a request that takes too long as a
+  // failure and let the retry/fallback logic below take over; if the
+  // original request does eventually resolve late, `settled` makes sure
+  // it's ignored instead of double-applying.
+  const timeoutId = setTimeout(() => {
+    if(settled) return;
+    settled = true;
+    console.warn(`[SNEAKIX] Catalog fetch timed out (attempt ${attempt + 1}).`);
+    handleFetchFailure(cachedRows, attempt);
+  }, CATALOG_FETCH_TIMEOUT_MS);
 
   Papa.parse(GOOGLE_SHEET_CSV_URL, {
     download: true,
     header: true,
-    worker: true, // parse off the main thread - matters most on the 5-min background refresh
+    // NOTE: intentionally NOT using worker:true here. PapaParse's worker
+    // mode is a well-documented source of unpredictable, browser-dependent
+    // failures (silently never firing complete/error on some setups) - and
+    // this catalog is small enough that parsing on the main thread is
+    // imperceptible, so it's not worth that risk.
     complete: function(results){
+      if(settled) return; // the timeout above already handled this attempt
+      settled = true;
+      clearTimeout(timeoutId);
+
       const rawRows = results.data.filter(r => Object.values(r).some(v => v && String(v).trim()));
 
       // Diagnostics - check the browser console (F12) if the grid looks empty.
       console.log(`[SNEAKIX] CSV columns detected:`, results.meta && results.meta.fields);
       console.log(`[SNEAKIX] Raw non-blank rows: ${rawRows.length}`);
+
+      if(isSuspiciousRefresh(rawRows, cachedRows)){
+        const priorCount = cachedRows ? cachedRows.length : SHOES.length;
+        console.warn(`[SNEAKIX] Fetched ${rawRows.length} row(s), far fewer than the ${priorCount} previously known - treating this as a bad fetch and keeping the current catalog on screen instead.`);
+        handleFetchFailure(cachedRows, attempt);
+        return;
+      }
 
       // The 5-minute background refresh (and the initial cache-then-live
       // double pass) used to call applyCatalogRows() unconditionally, which
@@ -2855,18 +2911,34 @@ function loadShoesFromSheet(){
       }
     },
     error: function(err){
-      // Only show the hard error state if there was nothing cached to fall
-      // back on - a failed background refresh shouldn't rip a working,
-      // cache-rendered page out from under someone mid-browse.
-      if(!cachedRows){
-        const grid = document.getElementById("grid");
-        grid.setAttribute("aria-busy", "false");
-        grid.innerHTML = `<div class="grid-empty"><span class="emoji" aria-hidden="true">⚠️</span>Couldn't load the catalog. Check the Google Sheet link is published correctly.</div>`;
-        document.documentElement.classList.remove("deep-link-pending");
-      }
+      if(settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
       console.error(err);
+      handleFetchFailure(cachedRows, attempt);
     }
   });
+}
+
+// Shared by a genuine PapaParse error, a timed-out request, and a
+// suspiciously thin refresh. Retries a couple of times in the background
+// with a short delay - so a one-off network blip quietly self-heals well
+// before the next scheduled 5-minute refresh - before finally showing the
+// hard error state, and even then ONLY if there's no cached or currently
+// on-screen catalog to fall back on. A failed background refresh should
+// never rip a working, already-rendered page out from under someone.
+function handleFetchFailure(cachedRows, attempt){
+  if(attempt < CATALOG_FETCH_MAX_RETRIES){
+    const delay = 3000 * (attempt + 1);
+    setTimeout(() => fetchCatalog(cachedRows, attempt + 1), delay);
+    return;
+  }
+  if(!cachedRows && SHOES.length === 0){
+    const grid = document.getElementById("grid");
+    grid.setAttribute("aria-busy", "false");
+    grid.innerHTML = `<div class="grid-empty"><span class="emoji" aria-hidden="true">⚠️</span>Couldn't load the catalog. Check the Google Sheet link is published correctly.</div>`;
+    document.documentElement.classList.remove("deep-link-pending");
+  }
 }
 
 const SHIPPING_TIERS = {
