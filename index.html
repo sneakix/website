@@ -3863,12 +3863,20 @@ function handleSearchOverlayKeydown(e){
   e.preventDefault();
   hideSuggestDropdown("searchOverlaySuggest");
   submitSearchOverlay();
+  // preventDefault() above stops type="search" inputs' own submit behaviour,
+  // which is what would otherwise close the on-screen keyboard - so without
+  // this the keyboard is left open after tapping the keyboard's search key.
+  e.target.blur();
 }
 
 function handleShopSearchKeydown(e){
   if(e.key !== "Enter") return;
   e.preventDefault();
   hideSuggestDropdown("shopSearchSuggest");
+  // preventDefault() above stops type="search" inputs' own submit behaviour,
+  // which is what would otherwise close the on-screen keyboard - so without
+  // this the keyboard is left open after tapping the keyboard's search key.
+  e.target.blur();
 }
 
 
@@ -5633,7 +5641,7 @@ function buildWhatsAppEnquiryUrl(shoe){
   const link = `${SITE_URL}#shoe-${shoe.id}`;
   let msg = `Hi, I'm interested in this shoe:\nProduct: ${shoe.name}\n`;
   if(shoe.price) msg += `Price: ₹${shoe.price.toLocaleString("en-IN")}\n`;
-  msg += `Link: ${link}\n`;
+  msg += `Link: ${link}\n\nIs this available?`;
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 }
 
