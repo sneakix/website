@@ -1150,6 +1150,43 @@
   .view-cart-btn:hover{ background:var(--gold-soft); }
   .view-cart-btn:active{ transform:scale(0.97); }
 
+  /* "WhatsApp Enquiry" button on the product page. A plain link (not a
+     button) so it opens WhatsApp natively on phones and WhatsApp Web on
+     desktop, and never touches the cart/checkout flow. */
+  .wa-ico{ width:1.15em; height:1.15em; flex:none; display:block; }
+  .wa-enquire-btn{
+    width:100%; margin-top:8px; padding:11px;
+    border:none; border-radius:var(--radius-sm);
+    background:var(--success); color:#fff;
+    font-weight:800; font-size:12.5px; text-transform:none;
+    letter-spacing:0.02em; cursor:pointer; text-decoration:none;
+    font-family:inherit;
+    min-height:42px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    box-sizing:border-box;
+    transition:filter var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .wa-enquire-btn .wa-ico{ width:20px; height:20px; }
+  .wa-enquire-btn:hover{ filter:brightness(0.95); }
+  .wa-enquire-btn:active{ transform:scale(0.97); }
+  @media (max-width:480px){
+    .wa-enquire-btn{ padding:14px; min-height:50px; font-size:14px; }
+  }
+
+  /* Small WhatsApp icon shown next to the heart on product cards. Same size
+     and style as the heart so the two read as a pair; sits in the card body,
+     not on the photo. */
+  .card-actions{ display:flex; align-items:center; gap:12px; flex:none; }
+  .wa-icon-btn{
+    display:flex; align-items:center; justify-content:center;
+    width:22px; height:22px; flex:none; padding:0;
+    color:var(--success); text-decoration:none; cursor:pointer;
+    transition:transform var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease);
+  }
+  .wa-icon-btn .wa-ico{ width:20px; height:20px; }
+  .wa-icon-btn:hover{ filter:brightness(0.9); }
+  .wa-icon-btn:active{ transform:scale(0.82); }
+
   /* ---------- Expanded detail ---------- */
   /* grid-rows 0fr->1fr trick animates height without JS measuring, and never clips overflowing focus rings */
   .expand-panel{
@@ -2487,6 +2524,10 @@
    ========================================================= */
 const WHATSAPP_NUMBER = "919778781170"; // <-- your real WhatsApp number, country code + number, no + or spaces
 const SITE_URL = "https://sneakix.pages.dev/"; // <-- must exactly match wherever this site is actually live (update again if you move to a custom domain)
+
+// WhatsApp logo used by the "WhatsApp Enquiry" button (product page) and the
+// small icon next to the heart on product cards. Inherits its colour from CSS.
+const WA_ICON_SVG = '<svg class="wa-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
 
 // ---------- Analytics event tracking (GA4) ----------
 // Sends custom events to Google Analytics so you can see what customers
@@ -5071,11 +5112,14 @@ function renderGrid(){
         <div class="body">
           <div class="brand-row">
             <div class="brand">${escapeHtml(shoe.brand)}</div>
-            <button class="heart-toggle-btn ${savedIds.includes(shoe.id) ? 'active' : ''}" id="heartBtnGrid-${shoe.id}"
-              onclick="event.stopPropagation(); toggleSaved(${shoe.id})"
-              aria-label="${savedIds.includes(shoe.id) ? 'Remove from saved' : 'Save for comparison'}" aria-pressed="${savedIds.includes(shoe.id)}">
-              <span aria-hidden="true">${heartGlyph(savedIds.includes(shoe.id))}</span>
-            </button>
+            <div class="card-actions">
+              <button class="heart-toggle-btn ${savedIds.includes(shoe.id) ? 'active' : ''}" id="heartBtnGrid-${shoe.id}"
+                onclick="event.stopPropagation(); toggleSaved(${shoe.id})"
+                aria-label="${savedIds.includes(shoe.id) ? 'Remove from saved' : 'Save for comparison'}" aria-pressed="${savedIds.includes(shoe.id)}">
+                <span aria-hidden="true">${heartGlyph(savedIds.includes(shoe.id))}</span>
+              </button>
+              ${waCardBtnHtml(shoe)}
+            </div>
           </div>
           <div class="name">${escapeHtml(shoe.name)}</div>
           <div class="price-row">
@@ -5151,11 +5195,14 @@ function renderHomeFeatured(){
         <div class="body">
           <div class="brand-row">
             <div class="brand">${escapeHtml(shoe.brand)}</div>
-            <button class="heart-toggle-btn ${savedIds.includes(shoe.id) ? 'active' : ''}" id="heartBtnHome-${shoe.id}"
-              onclick="event.stopPropagation(); toggleSaved(${shoe.id})"
-              aria-label="${savedIds.includes(shoe.id) ? 'Remove from saved' : 'Save for comparison'}" aria-pressed="${savedIds.includes(shoe.id)}">
-              <span aria-hidden="true">${heartGlyph(savedIds.includes(shoe.id))}</span>
-            </button>
+            <div class="card-actions">
+              <button class="heart-toggle-btn ${savedIds.includes(shoe.id) ? 'active' : ''}" id="heartBtnHome-${shoe.id}"
+                onclick="event.stopPropagation(); toggleSaved(${shoe.id})"
+                aria-label="${savedIds.includes(shoe.id) ? 'Remove from saved' : 'Save for comparison'}" aria-pressed="${savedIds.includes(shoe.id)}">
+                <span aria-hidden="true">${heartGlyph(savedIds.includes(shoe.id))}</span>
+              </button>
+              ${waCardBtnHtml(shoe)}
+            </div>
           </div>
           <div class="name">${escapeHtml(shoe.name)}</div>
           <div class="price-row">
@@ -5553,11 +5600,14 @@ function renderSimilarProductsHtml(shoe){
               <div class="body">
                 <div class="brand-row">
                   <div class="brand">${escapeHtml(s.brand)}</div>
-                  <button class="heart-toggle-btn ${savedIds.includes(s.id) ? 'active' : ''}" id="heartBtnSimilar-${s.id}"
-                    onclick="event.stopPropagation(); toggleSaved(${s.id})"
-                    aria-label="${savedIds.includes(s.id) ? 'Remove from saved' : 'Save for comparison'}" aria-pressed="${savedIds.includes(s.id)}">
-                    <span aria-hidden="true">${heartGlyph(savedIds.includes(s.id))}</span>
-                  </button>
+                  <div class="card-actions">
+                    <button class="heart-toggle-btn ${savedIds.includes(s.id) ? 'active' : ''}" id="heartBtnSimilar-${s.id}"
+                      onclick="event.stopPropagation(); toggleSaved(${s.id})"
+                      aria-label="${savedIds.includes(s.id) ? 'Remove from saved' : 'Save for comparison'}" aria-pressed="${savedIds.includes(s.id)}">
+                      <span aria-hidden="true">${heartGlyph(savedIds.includes(s.id))}</span>
+                    </button>
+                    ${waCardBtnHtml(s)}
+                  </div>
                 </div>
                 <div class="name">${escapeHtml(s.name)}</div>
                 <div class="price-row">
@@ -5571,6 +5621,31 @@ function renderSimilarProductsHtml(shoe){
       </div>
     </div>
   `;
+}
+
+// Builds the click-to-chat link for the "WhatsApp Enquiry" button. Every
+// value comes from the product being viewed (name/price from SHOES, link from
+// the same SITE_URL + #shoe-<id> format the cart uses), so it's correct for
+// every product - including ones added to the sheet later. The whole message
+// goes through encodeURIComponent so spaces, ₹, &, #, quotes, etc. can't
+// break the link.
+function buildWhatsAppEnquiryUrl(shoe){
+  const link = `${SITE_URL}#shoe-${shoe.id}`;
+  let msg = `Hi, I'm interested in this shoe:\nProduct: ${shoe.name}\n`;
+  if(shoe.price) msg += `Price: ₹${shoe.price.toLocaleString("en-IN")}\n`;
+  msg += `Link: ${link}\n\nIs this available?`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+}
+
+// Small WhatsApp icon link for product cards (grid, homepage featured, and
+// "similar products"). stopPropagation keeps a tap on it from also opening the
+// card's own product page, and the keydown one keeps Enter on the link from
+// being swallowed by the card's keyboard handler.
+function waCardBtnHtml(shoe){
+  return `<a class="wa-icon-btn" href="${escapeHtml(buildWhatsAppEnquiryUrl(shoe))}" target="_blank" rel="noopener noreferrer"
+    onclick="event.stopPropagation(); trackEvent('whatsapp_enquiry', { item_id: ${shoe.id}, location: 'card' })"
+    onkeydown="event.stopPropagation()"
+    aria-label="Enquire about ${escapeHtml(shoe.name)} on WhatsApp" title="WhatsApp Enquiry">${WA_ICON_SVG}</a>`;
 }
 
 function renderItemDetail(){
@@ -5665,6 +5740,11 @@ function renderItemDetail(){
           <button class="view-cart-btn" onclick="openCart()">View Cart <span aria-hidden="true">→</span></button>
         </div>
       </div>
+
+      <a class="wa-enquire-btn" href="${escapeHtml(buildWhatsAppEnquiryUrl(shoe))}" target="_blank" rel="noopener noreferrer"
+        onclick="trackEvent('whatsapp_enquiry', { item_id: ${shoe.id}, location: 'product_page' })">
+        ${WA_ICON_SVG}<span>WhatsApp Enquiry</span>
+      </a>
 
       ${shoe.codAvailable ? `<div class="item-detail-avail-list">
         <div class="avail-line">✓ Cash on Delivery Available (COD)</div>
