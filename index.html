@@ -5633,7 +5633,7 @@ function buildWhatsAppEnquiryUrl(shoe){
   const link = `${SITE_URL}#shoe-${shoe.id}`;
   let msg = `Hi, I'm interested in this shoe:\nProduct: ${shoe.name}\n`;
   if(shoe.price) msg += `Price: ₹${shoe.price.toLocaleString("en-IN")}\n`;
-  msg += `Link: ${link}\n\nIs this available?`;
+  msg += `Link: ${link}\n`;
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 }
 
