@@ -3842,6 +3842,7 @@ function handleSearchOverlaySuggestClick(e){
   const input = document.getElementById("searchOverlayInput");
   input.value = item.dataset.value;
   hideSuggestDropdown("searchOverlaySuggest");
+  input.blur(); // close the on-screen keyboard - tapping a suggestion is as much a "submit" as pressing Enter
   submitSearchOverlay();
 }
 
@@ -3851,7 +3852,9 @@ function handleShopSuggestClick(e){
   const input = document.getElementById("searchInput");
   input.value = item.dataset.value;
   hideSuggestDropdown("shopSearchSuggest");
+  input.blur(); // close the on-screen keyboard - tapping a suggestion is as much a "submit" as pressing Enter
   onSearch();
+  scrollToSearchResults();
 }
 
 // Enter always searches exactly what's typed - it never silently swaps
@@ -3877,6 +3880,7 @@ function handleShopSearchKeydown(e){
   // which is what would otherwise close the on-screen keyboard - so without
   // this the keyboard is left open after tapping the keyboard's search key.
   e.target.blur();
+  scrollToSearchResults();
 }
 
 
@@ -4419,6 +4423,7 @@ function clearGenderFilter(){
 let searchRenderTimer = null;
 let searchTrackTimer = null;
 function onSearch(){
+  const justStartedSearching = !searchTerm;
   searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
   currentPage = 1;
 
@@ -4431,6 +4436,10 @@ function onSearch(){
   searchRenderTimer = setTimeout(() => {
     renderGrid();
     updateGenderHeroVisibility();
+    // Only the moment the search box goes from empty to non-empty - not
+    // every keystroke after that - so a shopper who's scrolled down to
+    // compare results isn't yanked back up each time they refine the term.
+    if(justStartedSearching && searchTerm) scrollToSearchResults();
   }, 150);
 
   // Debounced: only log once the customer pauses typing for a bit, not on
@@ -4697,6 +4706,10 @@ function submitSearchOverlay(){
   renderGrid();
   updateGenderHeroVisibility();
   closeSearchOverlay();
+  // Runs after showAllProducts()'s own top-of-page scroll above (when this
+  // came from Home) so this is the scroll position that actually sticks -
+  // landing on the results instead of the hero/category tiles above them.
+  scrollToSearchResults();
 }
 
 function openHomeFilters(){
@@ -5010,12 +5023,17 @@ function goToPage(p){
   if(p < 1 || p === currentPage) return;
   currentPage = p;
   renderGrid();
-  // Scroll to the search bar rather than the absolute top of the page -
-  // the shopper just paged forward within the same listing, so jumping
-  // past the hero/category chips back to the very top would be jarring;
-  // landing at the search bar keeps them oriented right above the grid.
+  scrollToSearchResults();
+}
+
+// Scrolls the search bar (and the results grid right under it) to the top
+// of the screen, so the hero banner / category tiles above it scroll out
+// of the way. Without this, typing a search only updates the grid further
+// down the page - on a phone, with the keyboard open too, that leaves the
+// visible area unchanged and makes it look like nothing happened.
+function scrollToSearchResults(){
   const anchor = document.getElementById("searchWrap") || document.getElementById("grid");
-  anchor.scrollIntoView({ behavior:"smooth", block:"start" });
+  if(anchor) anchor.scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
 // Warms the browser's cache for the *next* "Show More" batch - so when the
