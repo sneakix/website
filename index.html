@@ -4932,7 +4932,18 @@ function getFilteredShoes(){
     if(searchTerm){
       const availKeywords = shoe.codAvailable ? 'cod cash on delivery cash on delivery available' : '';
       const haystack = `${shoe.name} ${shoe.brand} ${shoe.category} ${shoe.sizes} ${detectModel(shoe.name)} ${availKeywords}`.toLowerCase();
-      if(!haystack.includes(searchTerm)) return false;
+      // Each word must appear somewhere in haystack, not as one glued phrase -
+      // "nike dunk" then matches "Nike SB Dunk Low" too (word order/gaps don't
+      // block it), same as it already matched "Nike Dunk Low" before.
+      // A word that's a known shorthand (SEARCH_ALIASES, e.g. "af", "nb") is
+      // resolved to what it stands for first, so typing "af" and hitting
+      // Enter directly matches "Nike Air Force 1" the same way picking that
+      // suggestion from the dropdown already did - "af" itself never
+      // literally appears in any product name, so without this it matched
+      // nothing.
+      const searchWords = searchTerm.split(/\s+/).filter(Boolean)
+        .map(w => (SEARCH_ALIASES[w] || w).toLowerCase());
+      if(!searchWords.every(w => haystack.includes(w))) return false;
     }
     if(activeGender && !shoeMatchesGender(shoe, activeGender)) return false;
     if(activeCategory !== "All" && !categoryMatches(shoe.category, activeCategory)) return false;
