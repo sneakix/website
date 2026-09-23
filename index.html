@@ -5666,10 +5666,14 @@ function renderSimilarProductsHtml(shoe){
 // every product - including ones added to the sheet later. The whole message
 // goes through encodeURIComponent so spaces, ₹, &, #, quotes, etc. can't
 // break the link.
-function buildWhatsAppEnquiryUrl(shoe){
+// size is optional (cards have no size selector, only the full product page
+// does) - passed in only from the product-page button, using whatever size
+// is currently selected there.
+function buildWhatsAppEnquiryUrl(shoe, size){
   const link = `${SITE_URL}#shoe-${shoe.id}`;
   let msg = `Hi, I'm interested in this shoe:\nProduct: ${shoe.name}\n`;
   if(shoe.price) msg += `Price: ₹${shoe.price.toLocaleString("en-IN")}\n`;
+  if(size) msg += `Size: ${size} (${shoe.sizeSystem})\n`;
   msg += `Link: ${link}\n\nIs this available?`;
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 }
@@ -5778,7 +5782,7 @@ function renderItemDetail(){
         </div>
       </div>
 
-      <a class="wa-enquire-btn" href="${escapeHtml(buildWhatsAppEnquiryUrl(shoe))}" target="_blank" rel="noopener noreferrer"
+      <a class="wa-enquire-btn" href="${escapeHtml(buildWhatsAppEnquiryUrl(shoe, selected))}" target="_blank" rel="noopener noreferrer"
         onclick="trackEvent('whatsapp_enquiry', { item_id: ${shoe.id}, location: 'product_page' })">
         ${WA_ICON_SVG}<span>WhatsApp Enquiry</span>
       </a>
