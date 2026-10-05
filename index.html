@@ -1180,6 +1180,7 @@
   .wa-icon-btn{
     display:flex; align-items:center; justify-content:center;
     width:22px; height:22px; flex:none; padding:0;
+    border:none; background:none; font:inherit;
     color:var(--success); text-decoration:none; cursor:pointer;
     transition:transform var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease);
   }
@@ -5678,15 +5679,46 @@ function buildWhatsAppEnquiryUrl(shoe, size){
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 }
 
-// Small WhatsApp icon link for product cards (grid, homepage featured, and
-// "similar products"). stopPropagation keeps a tap on it from also opening the
-// card's own product page, and the keydown one keeps Enter on the link from
-// being swallowed by the card's keyboard handler.
+// Small WhatsApp icon on product cards (grid, homepage featured, and
+// "similar products"). A row with no Sizes value filled in links straight
+// to WhatsApp, same as before - this should be rare on a footwear catalog,
+// but it's a safe fallback for a row where sizes were left blank by
+// mistake. A product that does have sizes instead opens its product page
+// and points the shopper at the size picker, so every enquiry that can
+// name a size does - the owner shouldn't have to ask "which size?" before
+// checking stock.
 function waCardBtnHtml(shoe){
-  return `<a class="wa-icon-btn" href="${escapeHtml(buildWhatsAppEnquiryUrl(shoe))}" target="_blank" rel="noopener noreferrer"
-    onclick="event.stopPropagation(); trackEvent('whatsapp_enquiry', { item_id: ${shoe.id}, location: 'card' })"
+  if(parseSizes(shoe.sizes).length === 0){
+    return `<a class="wa-icon-btn" href="${escapeHtml(buildWhatsAppEnquiryUrl(shoe))}" target="_blank" rel="noopener noreferrer"
+      onclick="event.stopPropagation(); trackEvent('whatsapp_enquiry', { item_id: ${shoe.id}, location: 'card' })"
+      onkeydown="event.stopPropagation()"
+      aria-label="Enquire about ${escapeHtml(shoe.name)} on WhatsApp" title="WhatsApp Enquiry">${WA_ICON_SVG}</a>`;
+  }
+  return `<button type="button" class="wa-icon-btn" onclick="event.stopPropagation(); openItemDetailForSizeEnquiry(${shoe.id})"
     onkeydown="event.stopPropagation()"
-    aria-label="Enquire about ${escapeHtml(shoe.name)} on WhatsApp" title="WhatsApp Enquiry">${WA_ICON_SVG}</a>`;
+    aria-label="Select a size to enquire about ${escapeHtml(shoe.name)} on WhatsApp" title="Select size to enquire on WhatsApp">${WA_ICON_SVG}</button>`;
+}
+
+// Opens a product's page from its card's WhatsApp icon, then points the
+// shopper straight at the size picker instead of leaving them to scroll
+// down and find it themselves. A short delay lets the detail view actually
+// render first, since the elements below don't exist until it does.
+function openItemDetailForSizeEnquiry(shoeId){
+  openItemDetail(shoeId);
+  setTimeout(() => {
+    const sizesRow = document.getElementById(`sizes-${shoeId}`);
+    if(sizesRow){
+      sizesRow.scrollIntoView({ behavior:"smooth", block:"center" });
+      sizesRow.classList.remove("shake");
+      void sizesRow.offsetWidth; // restart animation
+      sizesRow.classList.add("shake");
+    }
+    const errorEl = document.getElementById(`sizeError-${shoeId}`);
+    if(errorEl){
+      errorEl.textContent = "Select your size, then tap WhatsApp Enquiry";
+      errorEl.classList.add("show");
+    }
+  }, 60);
 }
 
 function renderItemDetail(){
@@ -5783,7 +5815,7 @@ function renderItemDetail(){
       </div>
 
       <a class="wa-enquire-btn" href="${escapeHtml(buildWhatsAppEnquiryUrl(shoe, selected))}" target="_blank" rel="noopener noreferrer"
-        onclick="trackEvent('whatsapp_enquiry', { item_id: ${shoe.id}, location: 'product_page' })">
+        onclick="return handleWaEnquireClick(event, ${shoe.id})">
         ${WA_ICON_SVG}<span>WhatsApp Enquiry</span>
       </a>
 
@@ -5881,6 +5913,35 @@ function addToCart(shoeId){
   // icon in the header themselves. Stays visible (not just a brief toast)
   // since the customer may still want to keep browsing sizes/colors first.
   syncItemDetailCartState();
+}
+
+// Gate for the product page's WhatsApp Enquiry link (not the card icon,
+// which routes through openItemDetailForSizeEnquiry instead). A row with
+// no Sizes value has nothing to require, so it opens WhatsApp immediately.
+// One that does have sizes blocks the click - same error text/shake
+// addToCart already uses above - until a size is picked, so every enquiry
+// that can name a size does.
+function handleWaEnquireClick(e, shoeId){
+  const shoe = SHOES.find(s => s.id === shoeId);
+  if(!shoe) return false;
+  if(parseSizes(shoe.sizes).length > 0 && !selections[shoeId]){
+    e.preventDefault();
+    const errorEl = document.getElementById(`sizeError-${shoeId}`);
+    const sizesRow = document.getElementById(`sizes-${shoeId}`);
+    if(errorEl){
+      errorEl.textContent = "Please select your required size";
+      errorEl.classList.add("show");
+    }
+    if(sizesRow){
+      sizesRow.classList.remove("shake");
+      void sizesRow.offsetWidth; // restart animation
+      sizesRow.classList.add("shake");
+      sizesRow.scrollIntoView({ behavior:"smooth", block:"center" });
+    }
+    return false;
+  }
+  trackEvent('whatsapp_enquiry', { item_id: shoeId, location: 'product_page' });
+  return true;
 }
 
 // Keeps the item-detail page's "View Cart" prompt in sync with the actual
