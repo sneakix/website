@@ -2555,12 +2555,7 @@
    codAvailable   -> true/false, shows "Cash on Delivery Available" on the
                       item page - only selected products support COD, not
                       the whole catalog
-   isNew          -> true/false, shows the "NEW" tag and moves the product up
-                      the list (priority: Website_Listed 2 > New Arrival > 1).
-                      Auto-expires: if the sheet has a "New Arrival Date"
-                      column (aliases: "Date Added", "Updated On") and that
-                      date is more than NEW_ARRIVAL_DAYS old, the product is
-                      no longer treated as new. No date = never expires.
+   isNew          -> true/false, shows "NEW" tag + New Arrivals filter
    isSale         -> true/false, marketing-only SALE tag with no real price
                       cut. Ignored if marketPrice already produces a real
                       discount % (the % badge takes priority over this).
@@ -2621,52 +2616,6 @@ const GOOGLE_SHEET_CSV_URL = "https://sneakix-catalog-cache.zorvex-support.worke
 let SHOES = [];
 
 function toBool(v){ return String(v).trim().toUpperCase() === "TRUE"; }
-
-// ---------- New Arrival auto-expiry ----------
-// The site can't write back to the Google Sheet, so "New Arrival = TRUE"
-// is turned off here instead: once a product's "New Arrival Date" is more
-// than NEW_ARRIVAL_DAYS old it stops counting as new (no NEW tag, no
-// priority boost). The sheet cell itself is left as-is.
-const NEW_ARRIVAL_DAYS = 20;
-
-// Reads a date cell. Accepts 2026-10-19, 19/10/2026, 19-10-2026, 19.10.2026
-// (day first - Indian format - unless the middle number is clearly > 12,
-// in which case it is month/day), plus anything the browser's own Date
-// parser understands ("19 Oct 2026", "Oct 19, 2026"). Returns a Date, or
-// null if blank/unreadable.
-function parseSheetDate(raw){
-  const s = (raw || "").toString().trim();
-  if(!s) return null;
-  let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
-  if(m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
-  if(m){
-    let a = Number(m[1]), b = Number(m[2]), y = Number(m[3]);
-    if(y < 100) y += 2000;
-    const day = b > 12 ? b : a;
-    const month = b > 12 ? a : b;
-    return new Date(y, month - 1, day);
-  }
-  const t = Date.parse(s);
-  return isNaN(t) ? null : new Date(t);
-}
-
-// True while the product should still count as a new arrival.
-function isActiveNewArrival(row){
-  if(!toBool(row["New Arrival"])) return false;
-  const added = parseSheetDate(getRowValue(row, "New Arrival Date", "Date Added", "Updated On"));
-  if(!added) return true; // no date in the sheet -> can't expire it
-  const ageDays = (Date.now() - added.getTime()) / 86400000;
-  return ageDays <= NEW_ARRIVAL_DAYS;
-}
-
-// One ranking used by the default sort AND the homepage Featured grid:
-// Website_Listed=2 first, then active new arrivals, then everything else.
-// A product that is both listed-2 and new goes first within the listed-2 group.
-function featuredRank(shoe){
-  if(shoe.listedPriority === 2) return shoe.isNew ? 4 : 3;
-  return shoe.isNew ? 2 : 1;
-}
 
 // Tries several possible column header spellings in order, returning the
 // first one that's actually present in this row. Lets a single sheet
@@ -2774,7 +2723,7 @@ function rowsToShoes(rows){
       // listed individually.
       soldOutAll: /^all$/i.test((r["Sold Out Sizes"] || "").trim()),
       codAvailable: toBool(r["COD Available"]),
-      isNew: isActiveNewArrival(r),
+      isNew: toBool(r["New Arrival"]),
       isSale: toBool(r["Sale"]),
       // Per-product flag for the homepage "Special Offers" card - mark
       // any product TRUE to include it in the current seasonal sale. The
@@ -3700,7 +3649,7 @@ const BRAND_SIZE_CHARTS = {
   nb:        [[3.5,36],[4,37],[5,38],[5.5,39],[6.5,40],[7,41],[7.5,41.5],[8,42],[9,43],[9.5,44],[10,44.5],[10.5,45],[11,45.5],[11.5,46],[12,47]],
   hoka:      [[3.5,36],[4,37],[5,38],[5.5,39],[6.5,40],[7,41],[7.5,41.5],[8,42],[9,43],[9.5,44],[10,44.5],[10.5,45],[11,45.5],[11.5,46],[12,47]],
   // Converse - updated per store's latest chart
-  converse:  [[3.5,36],[4.5,37],[5.5,38],[6.5,39],[7,40],[7.5,41],[8.5,42],[9.5,43],[10.5,44],[11.5,45],[12,46]],
+  converse:  [[3,36],[3.5,37],[4,38],[5,39],[6,40],[7,41],[8,42],[9,43],[10,44],[11,45],[12,46]],
   // Skechers - updated per store's latest chart
   skechers:  [[3,36],[4,37],[5,38],[6,39],[6.5,40],[7,41],[7.5,42],[8.5,43],[9.5,44],[10.5,45],[11.5,46]],
   // Onitsuka Tiger / ASICS - added per brand's official chart (see
@@ -5362,11 +5311,7 @@ function getFilteredShoes(){
     if(activeSort === "price_low") return a.price - b.price;
     if(activeSort === "price_high") return b.price - a.price;
     if(activeSort === "az") return a.name.localeCompare(b.name);
-    if(activeSort === "newest"){
-      // Active new arrivals first, then pure recency (no Website_Listed boost here).
-      if(a.isNew !== b.isNew) return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
-      return b.order - a.order;
-    }
+    if(activeSort === "newest") return b.order - a.order; // pure recency, no priority boost - see "Default" below for that
     // Default ("latest"): within an Offers tier, the tier's own price
     // band surfaces first - e.g. Under ₹1,500 is technically 0-1499, but
     // showing the 1000-1499 items first (before repeating the same
@@ -5374,12 +5319,11 @@ function getFilteredShoes(){
     // each tier feel distinct instead of just a superset of the last.
     const bandA = tierBandPriority(a), bandB = tierBandPriority(b);
     if(bandA !== bandB) return bandB - bandA;
-    // Priority: Website_Listed=2 > active New Arrival > Website_Listed=1.
-    // Recency (later sheet row = newer) orders products inside each group.
-    // "1" items are never hidden, the others just get priority placement.
-    const rankA = featuredRank(a), rankB = featuredRank(b);
-    if(rankA !== rankB) return rankB - rankA;
-    return b.order - a.order;
+    // Website_Listed=2 items surface first as a group (still ordered by
+    // recency within that group), then everything else by recency -
+    // "1" items are never hidden, "2" just gets priority placement.
+    if(a.listedPriority !== b.listedPriority) return b.listedPriority - a.listedPriority;
+    return b.order - a.order; // latest-added first: later sheet rows = newer products
   });
 }
 
@@ -5589,8 +5533,7 @@ const HOME_FEATURED_PAGE_SIZE = 8;
 
 function getFeaturedHomeShoes(n){
   return [...SHOES].sort((a, b) => {
-    const rankA = featuredRank(a), rankB = featuredRank(b);
-    if(rankA !== rankB) return rankB - rankA;
+    if(a.listedPriority !== b.listedPriority) return b.listedPriority - a.listedPriority;
     return b.order - a.order;
   }).slice(0, n);
 }
