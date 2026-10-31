@@ -1990,7 +1990,7 @@
   <button class="secondary-nav-btn" id="navAllBtn" onclick="showAllProducts()">Shop</button>
   <button class="secondary-nav-btn" id="navMensBtn" onclick="selectGenderCategory('mens')">Men's</button>
   <button class="secondary-nav-btn" id="navWomensBtn" onclick="selectGenderCategory('womens')">Women's</button>
-  <button class="secondary-nav-btn" id="navKidsBtn" data-kids-entry onclick="selectGenderCategory('kids')">Kids</button>
+  <button class="secondary-nav-btn" id="navKidsBtn" data-kids-entry onclick="selectGenderCategory('kids')">Kid's</button>
   <button class="secondary-nav-btn" id="navOffersBtn" onclick="goToOffers()">Offers</button>
   <button class="secondary-nav-btn" id="navPremiumBtn" onclick="selectPriceTierHero('premium3000')">Premium</button>
 </nav>
@@ -2145,7 +2145,7 @@
       <button onclick="goToOffers()">Offers</button>
       <button onclick="selectGenderCategory('mens')">Men's</button>
       <button onclick="selectGenderCategory('womens')">Women's</button>
-      <button data-kids-entry onclick="selectGenderCategory('kids')">Kids</button>
+      <button data-kids-entry onclick="selectGenderCategory('kids')">Kid's</button>
       <button onclick="selectPriceTierHero('premium3000')">Premium</button>
       <button onclick="openSizeGuidePage()">Size Chart</button>
       <button onclick="openPoliciesPage()">Terms &amp; Policy</button>
@@ -2183,7 +2183,7 @@
     <button class="hamburger-link" onclick="closeHamburger(); showAllProducts();">Shop</button>
     <button class="hamburger-link" onclick="closeHamburger(); selectGenderCategory('mens')">Men's Footwear</button>
     <button class="hamburger-link" onclick="closeHamburger(); selectGenderCategory('womens')">Women's Footwear</button>
-    <button class="hamburger-link" data-kids-entry onclick="closeHamburger(); selectGenderCategory('kids')">Kids' Footwear</button>
+    <button class="hamburger-link" data-kids-entry onclick="closeHamburger(); selectGenderCategory('kids')">Kid's Footwear</button>
     <button class="hamburger-link" onclick="closeHamburger(); goToOffers();">Offers</button>
     <button class="hamburger-link" onclick="closeHamburger(); selectPriceTierHero('premium3000')">Premium</button>
 
@@ -4571,7 +4571,7 @@ function buildSectionBreadcrumbSegs(){
   } else if(activeGender === "W"){
     segs.push({ label:"Women's", onclick:"selectGenderCategory('womens')" });
   } else if(activeGender === "K"){
-    segs.push({ label:"Kids", onclick:"selectGenderCategory('kids')" });
+    segs.push({ label:"Kid's", onclick:"selectGenderCategory('kids')" });
   } else if(activeFilter === "premium3000"){
     segs.push({ label:"Premium", onclick:"selectPriceTierHero('premium3000')" });
   } else if(activeFilter === "offers"){
