@@ -5951,7 +5951,7 @@ function getSimilarShoes(shoe, n){
 }
 
 function renderSimilarProductsHtml(shoe){
-  const similar = getSimilarShoes(shoe, 6);
+  const similar = getSimilarShoes(shoe, 12);
   if(similar.length === 0) return "";
   return `
     <div class="item-detail-similar">
