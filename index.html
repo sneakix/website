@@ -5528,8 +5528,8 @@ function renderGrid(){
 // showMoreHomeFeatured below). Lives at module scope so it survives a
 // catalog refresh (applyCatalogRows calling renderHomeFeatured again)
 // without resetting the user's already-expanded view.
-let homeFeaturedVisibleCount = 8;
-const HOME_FEATURED_PAGE_SIZE = 8;
+let homeFeaturedVisibleCount = 16;
+const HOME_FEATURED_PAGE_SIZE = 16;
 
 function getFeaturedHomeShoes(n){
   return [...SHOES].sort((a, b) => {
