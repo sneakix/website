@@ -817,6 +817,29 @@
   @media(min-width:640px){ .has-kids .welcome-gender-stack .gender-card-label{ font-size:24px; } }
   @media(min-width:1024px){ .has-kids .welcome-gender-stack .gender-card-label{ font-size:32px; } }
 
+  /* Phones only: Shop by Category becomes a horizontally scrollable row
+     (same pattern as the Offers strip). Cards are larger than before -
+     two (Men's + Women's) fit on screen with a small peek of the next
+     card, so Kids is revealed by scrolling. Tablet/desktop keep the
+     original fixed row above. */
+  @media(max-width:639px){
+    .welcome-gender-stack{
+      overflow-x:auto; -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+      scroll-snap-type:x proximity;
+      scroll-padding-left:16px;
+    }
+    .welcome-gender-stack::-webkit-scrollbar{ display:none; }
+    .welcome-gender-stack::after{ content:""; flex:0 0 6px; } /* guarantees end spacing after the last card */
+    .welcome-gender-stack .gender-card-wide{
+      flex:0 0 42%; max-width:220px;
+      aspect-ratio:3/4;
+      scroll-snap-align:start;
+    }
+    .welcome-gender-stack .gender-card-label,
+    .has-kids .welcome-gender-stack .gender-card-label{ font-size:22px; line-height:1.05; }
+  }
+
   /* ---------- Welcome Page: Featured products grid ---------- */
   .featured-heading{
     font-family:"Bebas Neue","Arial Black",sans-serif; font-weight:400;
@@ -5951,7 +5974,7 @@ function getSimilarShoes(shoe, n){
 }
 
 function renderSimilarProductsHtml(shoe){
-  const similar = getSimilarShoes(shoe, 12);
+  const similar = getSimilarShoes(shoe, 6);
   if(similar.length === 0) return "";
   return `
     <div class="item-detail-similar">
